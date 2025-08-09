@@ -1,0 +1,611 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>BorgOS - Autonomous AI Operating System</title>
+    <meta name="description" content="BorgOS is an offline-first autonomous AI operating system that brings the power of artificial intelligence to your local environment. No cloud dependency, full privacy, complete control.">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.0/font/bootstrap-icons.css" rel="stylesheet">
+    <link href="https://unpkg.com/aos@2.3.1/dist/aos.css" rel="stylesheet">
+    <link href="style.css" rel="stylesheet">
+</head>
+<body>
+    <!-- Navigation -->
+    <nav class="navbar navbar-expand-lg navbar-dark fixed-top">
+        <div class="container">
+            <a class="navbar-brand" href="#home">
+                <i class="bi bi-cpu-fill"></i> BorgOS
+            </a>
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+            <div class="collapse navbar-collapse" id="navbarNav">
+                <ul class="navbar-nav ms-auto">
+                    <li class="nav-item"><a class="nav-link" href="#features">Features</a></li>
+                    <li class="nav-item"><a class="nav-link" href="#architecture">Architecture</a></li>
+                    <li class="nav-item"><a class="nav-link" href="#models">AI Models</a></li>
+                    <li class="nav-item"><a class="nav-link" href="#specs">Specifications</a></li>
+                    <li class="nav-item"><a class="nav-link" href="#install">Installation</a></li>
+                    <li class="nav-item">
+                        <a class="btn btn-primary ms-2" href="#download">Download Now</a>
+                    </li>
+                </ul>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Hero Section -->
+    <section id="home" class="hero-section">
+        <div class="hero-bg"></div>
+        <div class="container">
+            <div class="row align-items-center min-vh-100">
+                <div class="col-lg-6" data-aos="fade-right">
+                    <h1 class="display-2 fw-bold mb-4">
+                        Autonomous AI<br>
+                        <span class="gradient-text">Operating System</span>
+                    </h1>
+                    <p class="lead mb-4">
+                        BorgOS brings enterprise-grade AI capabilities to your local environment. 
+                        Work offline, maintain complete privacy, and leverage the power of modern LLMs 
+                        without cloud dependencies.
+                    </p>
+                    <div class="d-flex gap-3 mb-4">
+                        <a href="#download" class="btn btn-primary btn-lg">
+                            <i class="bi bi-download me-2"></i> Download ISO
+                        </a>
+                        <a href="#features" class="btn btn-outline-light btn-lg">
+                            Learn More <i class="bi bi-arrow-right ms-2"></i>
+                        </a>
+                    </div>
+                    <div class="stats d-flex gap-4">
+                        <div>
+                            <h4 class="mb-0">100%</h4>
+                            <small class="text-muted">Offline Capable</small>
+                        </div>
+                        <div>
+                            <h4 class="mb-0">7B+</h4>
+                            <small class="text-muted">Parameters</small>
+                        </div>
+                        <div>
+                            <h4 class="mb-0">Zero</h4>
+                            <small class="text-muted">Cloud Dependency</small>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-lg-6" data-aos="fade-left">
+                    <div class="hero-image">
+                        <div class="terminal-window">
+                            <div class="terminal-header">
+                                <span class="terminal-button red"></span>
+                                <span class="terminal-button yellow"></span>
+                                <span class="terminal-button green"></span>
+                            </div>
+                            <div class="terminal-body">
+                                <pre><code>$ borg "analyze system performance"
+<span class="text-success">✓</span> Initializing BorgOS AI Engine...
+<span class="text-success">✓</span> Loading Mistral 7B model...
+<span class="text-success">✓</span> Analyzing system metrics...
+
+<span class="text-primary">System Performance Analysis:</span>
+• CPU Usage: 23% (4 cores available)
+• Memory: 4.2GB/8GB (52% used)
+• Disk I/O: Optimal
+• Network: 100Mbps available
+• AI Model Status: Active & Ready
+
+<span class="text-warning">Recommendations:</span>
+1. Consider enabling GPU acceleration
+2. 3.8GB RAM available for additional models
+3. All systems operating within normal parameters
+
+$ borg "optimize for development workflow"
+<span class="text-success">✓</span> Configuring development environment...</code></pre>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="hero-particles"></div>
+    </section>
+
+    <!-- Features Section -->
+    <section id="features" class="py-5">
+        <div class="container">
+            <div class="text-center mb-5" data-aos="fade-up">
+                <h2 class="display-4 fw-bold">Powerful Features</h2>
+                <p class="lead">Everything you need for autonomous AI operations</p>
+            </div>
+            <div class="row g-4">
+                <div class="col-md-6 col-lg-4" data-aos="fade-up" data-aos-delay="100">
+                    <div class="feature-card">
+                        <div class="feature-icon">
+                            <i class="bi bi-shield-lock"></i>
+                        </div>
+                        <h4>Complete Privacy</h4>
+                        <p>All AI processing happens locally. Your data never leaves your machine. Full control over your information.</p>
+                    </div>
+                </div>
+                <div class="col-md-6 col-lg-4" data-aos="fade-up" data-aos-delay="200">
+                    <div class="feature-card">
+                        <div class="feature-icon">
+                            <i class="bi bi-wifi-off"></i>
+                        </div>
+                        <h4>Offline-First Design</h4>
+                        <p>Works completely offline with local LLMs. Internet connection optional for enhanced capabilities.</p>
+                    </div>
+                </div>
+                <div class="col-md-6 col-lg-4" data-aos="fade-up" data-aos-delay="300">
+                    <div class="feature-card">
+                        <div class="feature-icon">
+                            <i class="bi bi-robot"></i>
+                        </div>
+                        <h4>Multiple AI Models</h4>
+                        <p>Support for Mistral, Llama, CodeLlama, and more. Seamlessly switch between models based on your needs.</p>
+                    </div>
+                </div>
+                <div class="col-md-6 col-lg-4" data-aos="fade-up" data-aos-delay="400">
+                    <div class="feature-card">
+                        <div class="feature-icon">
+                            <i class="bi bi-terminal"></i>
+                        </div>
+                        <h4>Natural Language CLI</h4>
+                        <p>Control your system using natural language commands. No need to remember complex syntax.</p>
+                    </div>
+                </div>
+                <div class="col-md-6 col-lg-4" data-aos="fade-up" data-aos-delay="500">
+                    <div class="feature-card">
+                        <div class="feature-icon">
+                            <i class="bi bi-speedometer2"></i>
+                        </div>
+                        <h4>Real-time Monitoring</h4>
+                        <p>Professional DevOps dashboard with live metrics, service management, and system analytics.</p>
+                    </div>
+                </div>
+                <div class="col-md-6 col-lg-4" data-aos="fade-up" data-aos-delay="600">
+                    <div class="feature-card">
+                        <div class="feature-icon">
+                            <i class="bi bi-plug"></i>
+                        </div>
+                        <h4>Extensible Architecture</h4>
+                        <p>Plugin system for custom tools and integrations. Extend BorgOS to meet your specific needs.</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Architecture Section -->
+    <section id="architecture" class="py-5 bg-dark">
+        <div class="container">
+            <div class="row align-items-center">
+                <div class="col-lg-6" data-aos="fade-right">
+                    <h2 class="display-4 fw-bold mb-4">System Architecture</h2>
+                    <p class="lead mb-4">
+                        BorgOS is built on a robust, modular architecture designed for reliability, 
+                        performance, and extensibility.
+                    </p>
+                    <div class="architecture-features">
+                        <div class="arch-item mb-3">
+                            <i class="bi bi-check-circle-fill text-primary me-2"></i>
+                            <strong>Debian 12 Base:</strong> Stable, secure foundation
+                        </div>
+                        <div class="arch-item mb-3">
+                            <i class="bi bi-check-circle-fill text-primary me-2"></i>
+                            <strong>Ollama Integration:</strong> Local LLM inference engine
+                        </div>
+                        <div class="arch-item mb-3">
+                            <i class="bi bi-check-circle-fill text-primary me-2"></i>
+                            <strong>MCP Protocol:</strong> Model Context Protocol for tool integration
+                        </div>
+                        <div class="arch-item mb-3">
+                            <i class="bi bi-check-circle-fill text-primary me-2"></i>
+                            <strong>ChromaDB:</strong> Vector database for persistent memory
+                        </div>
+                        <div class="arch-item mb-3">
+                            <i class="bi bi-check-circle-fill text-primary me-2"></i>
+                            <strong>Docker Support:</strong> Container orchestration built-in
+                        </div>
+                        <div class="arch-item mb-3">
+                            <i class="bi bi-check-circle-fill text-primary me-2"></i>
+                            <strong>Zero-Trust Security:</strong> Input validation and sandboxing
+                        </div>
+                    </div>
+                </div>
+                <div class="col-lg-6" data-aos="fade-left">
+                    <div class="architecture-diagram">
+                        <div class="arch-layer">
+                            <div class="arch-box user">User Interface Layer</div>
+                            <div class="arch-components">
+                                <span>Web Dashboard</span>
+                                <span>CLI Interface</span>
+                                <span>API Endpoints</span>
+                            </div>
+                        </div>
+                        <div class="arch-layer">
+                            <div class="arch-box ai">AI Processing Layer</div>
+                            <div class="arch-components">
+                                <span>Ollama</span>
+                                <span>Model Manager</span>
+                                <span>MCP Server</span>
+                            </div>
+                        </div>
+                        <div class="arch-layer">
+                            <div class="arch-box services">Service Layer</div>
+                            <div class="arch-components">
+                                <span>Docker</span>
+                                <span>nginx</span>
+                                <span>n8n</span>
+                            </div>
+                        </div>
+                        <div class="arch-layer">
+                            <div class="arch-box system">System Layer</div>
+                            <div class="arch-components">
+                                <span>Debian 12</span>
+                                <span>ChromaDB</span>
+                                <span>SQLite</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- AI Models Section -->
+    <section id="models" class="py-5">
+        <div class="container">
+            <div class="text-center mb-5" data-aos="fade-up">
+                <h2 class="display-4 fw-bold">Supported AI Models</h2>
+                <p class="lead">Choose from a variety of powerful language models</p>
+            </div>
+            <div class="row g-4">
+                <div class="col-md-6 col-lg-3" data-aos="zoom-in" data-aos-delay="100">
+                    <div class="model-card">
+                        <div class="model-icon">
+                            <img src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ctext y='70' font-size='60' fill='%23667eea'%3E🤖%3C/text%3E%3C/svg%3E" alt="Mistral">
+                        </div>
+                        <h5>Mistral 7B</h5>
+                        <p class="text-muted mb-3">High-performance general-purpose model</p>
+                        <ul class="model-specs">
+                            <li>7B parameters</li>
+                            <li>4GB RAM required</li>
+                            <li>Excellent for coding</li>
+                        </ul>
+                    </div>
+                </div>
+                <div class="col-md-6 col-lg-3" data-aos="zoom-in" data-aos-delay="200">
+                    <div class="model-card">
+                        <div class="model-icon">
+                            <img src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ctext y='70' font-size='60' fill='%2310b981'%3E🦙%3C/text%3E%3C/svg%3E" alt="Llama">
+                        </div>
+                        <h5>Llama 2</h5>
+                        <p class="text-muted mb-3">Meta's powerful open model</p>
+                        <ul class="model-specs">
+                            <li>7B-70B variants</li>
+                            <li>Highly capable</li>
+                            <li>Great for analysis</li>
+                        </ul>
+                    </div>
+                </div>
+                <div class="col-md-6 col-lg-3" data-aos="zoom-in" data-aos-delay="300">
+                    <div class="model-card">
+                        <div class="model-icon">
+                            <img src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ctext y='70' font-size='60' fill='%23f59e0b'%3E💻%3C/text%3E%3C/svg%3E" alt="CodeLlama">
+                        </div>
+                        <h5>CodeLlama</h5>
+                        <p class="text-muted mb-3">Specialized for programming</p>
+                        <ul class="model-specs">
+                            <li>Code generation</li>
+                            <li>Multiple languages</li>
+                            <li>Debugging support</li>
+                        </ul>
+                    </div>
+                </div>
+                <div class="col-md-6 col-lg-3" data-aos="zoom-in" data-aos-delay="400">
+                    <div class="model-card">
+                        <div class="model-icon">
+                            <img src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ctext y='70' font-size='60' fill='%233b82f6'%3E➕%3C/text%3E%3C/svg%3E" alt="Custom">
+                        </div>
+                        <h5>Custom Models</h5>
+                        <p class="text-muted mb-3">Add your own models</p>
+                        <ul class="model-specs">
+                            <li>GGUF format</li>
+                            <li>Easy import</li>
+                            <li>Full control</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+            <div class="text-center mt-5" data-aos="fade-up">
+                <p class="mb-0">All models run locally with <strong>zero data leaving your system</strong></p>
+            </div>
+        </div>
+    </section>
+
+    <!-- Specifications Section -->
+    <section id="specs" class="py-5 bg-light">
+        <div class="container">
+            <div class="row">
+                <div class="col-lg-6" data-aos="fade-right">
+                    <h2 class="display-4 fw-bold mb-4">System Requirements</h2>
+                    <div class="specs-table">
+                        <h5 class="text-primary mb-3">Minimum Requirements</h5>
+                        <table class="table">
+                            <tr>
+                                <td><i class="bi bi-cpu me-2"></i> Processor</td>
+                                <td>x86_64 CPU (2+ cores)</td>
+                            </tr>
+                            <tr>
+                                <td><i class="bi bi-memory me-2"></i> Memory</td>
+                                <td>4GB RAM</td>
+                            </tr>
+                            <tr>
+                                <td><i class="bi bi-hdd me-2"></i> Storage</td>
+                                <td>20GB free space</td>
+                            </tr>
+                            <tr>
+                                <td><i class="bi bi-display me-2"></i> Display</td>
+                                <td>1024x768 resolution</td>
+                            </tr>
+                        </table>
+                        
+                        <h5 class="text-primary mb-3 mt-4">Recommended Requirements</h5>
+                        <table class="table">
+                            <tr>
+                                <td><i class="bi bi-cpu me-2"></i> Processor</td>
+                                <td>x86_64 CPU (4+ cores)</td>
+                            </tr>
+                            <tr>
+                                <td><i class="bi bi-memory me-2"></i> Memory</td>
+                                <td>8GB+ RAM</td>
+                            </tr>
+                            <tr>
+                                <td><i class="bi bi-hdd me-2"></i> Storage</td>
+                                <td>50GB+ SSD space</td>
+                            </tr>
+                            <tr>
+                                <td><i class="bi bi-gpu-card me-2"></i> GPU</td>
+                                <td>NVIDIA GPU (optional)</td>
+                            </tr>
+                        </table>
+                    </div>
+                </div>
+                <div class="col-lg-6" data-aos="fade-left">
+                    <h2 class="display-4 fw-bold mb-4">What's Included</h2>
+                    <div class="included-list">
+                        <div class="included-item">
+                            <i class="bi bi-check-circle-fill text-success"></i>
+                            <div>
+                                <h6>Complete OS Installation</h6>
+                                <p class="text-muted mb-2">Debian 12 base with all dependencies pre-configured</p>
+                            </div>
+                        </div>
+                        <div class="included-item">
+                            <i class="bi bi-check-circle-fill text-success"></i>
+                            <div>
+                                <h6>AI Models Pre-installed</h6>
+                                <p class="text-muted mb-2">Mistral 7B included, ready to use immediately</p>
+                            </div>
+                        </div>
+                        <div class="included-item">
+                            <i class="bi bi-check-circle-fill text-success"></i>
+                            <div>
+                                <h6>Development Tools</h6>
+                                <p class="text-muted mb-2">Python, Docker, Git, and essential dev tools</p>
+                            </div>
+                        </div>
+                        <div class="included-item">
+                            <i class="bi bi-check-circle-fill text-success"></i>
+                            <div>
+                                <h6>Web Dashboard</h6>
+                                <p class="text-muted mb-2">Professional monitoring and management interface</p>
+                            </div>
+                        </div>
+                        <div class="included-item">
+                            <i class="bi bi-check-circle-fill text-success"></i>
+                            <div>
+                                <h6>Documentation</h6>
+                                <p class="text-muted mb-2">Comprehensive guides and API documentation</p>
+                            </div>
+                        </div>
+                        <div class="included-item">
+                            <i class="bi bi-check-circle-fill text-success"></i>
+                            <div>
+                                <h6>Security Features</h6>
+                                <p class="text-muted mb-2">Zero-trust architecture, sandboxing, encryption</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Installation Section -->
+    <section id="install" class="py-5">
+        <div class="container">
+            <div class="text-center mb-5" data-aos="fade-up">
+                <h2 class="display-4 fw-bold">Easy Installation</h2>
+                <p class="lead">Get BorgOS running in minutes</p>
+            </div>
+            <div class="row g-4">
+                <div class="col-md-4" data-aos="fade-up" data-aos-delay="100">
+                    <div class="install-step">
+                        <div class="step-number">1</div>
+                        <h5>Download ISO</h5>
+                        <p>Download the BorgOS ISO image (approximately 4GB)</p>
+                    </div>
+                </div>
+                <div class="col-md-4" data-aos="fade-up" data-aos-delay="200">
+                    <div class="install-step">
+                        <div class="step-number">2</div>
+                        <h5>Create Bootable USB</h5>
+                        <p>Use any USB creation tool to create a bootable drive</p>
+                    </div>
+                </div>
+                <div class="col-md-4" data-aos="fade-up" data-aos-delay="300">
+                    <div class="install-step">
+                        <div class="step-number">3</div>
+                        <h5>Install & Run</h5>
+                        <p>Boot from USB and follow the automated installation</p>
+                    </div>
+                </div>
+            </div>
+            <div class="installation-commands mt-5" data-aos="fade-up">
+                <h5 class="text-center mb-4">Or Install via Script</h5>
+                <div class="code-block">
+                    <pre><code># Download and run the installer
+curl -sSL https://borgos.ai/install.sh | bash
+
+# Or clone the repository
+git clone https://github.com/borgos/borgos.git
+cd borgos
+./install.sh</code></pre>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Download Section -->
+    <section id="download" class="py-5 bg-gradient-primary text-white">
+        <div class="container text-center">
+            <div data-aos="zoom-in">
+                <h2 class="display-4 fw-bold mb-4">Ready to Experience BorgOS?</h2>
+                <p class="lead mb-5">
+                    Join the autonomous AI revolution. Download BorgOS today and take control of your AI infrastructure.
+                </p>
+                <div class="download-options">
+                    <div class="row justify-content-center g-4">
+                        <div class="col-md-4">
+                            <div class="download-card">
+                                <i class="bi bi-disc display-1 mb-3"></i>
+                                <h4>ISO Image</h4>
+                                <p>Complete OS installation</p>
+                                <a href="#" class="btn btn-light btn-lg w-100">
+                                    <i class="bi bi-download me-2"></i> Download ISO
+                                </a>
+                                <small class="d-block mt-2">Version 1.0 • 4.2GB</small>
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="download-card">
+                                <i class="bi bi-box display-1 mb-3"></i>
+                                <h4>Docker Image</h4>
+                                <p>Container deployment</p>
+                                <a href="#" class="btn btn-light btn-lg w-100">
+                                    <i class="bi bi-download me-2"></i> Pull Image
+                                </a>
+                                <small class="d-block mt-2">docker pull borgos/borgos</small>
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="download-card">
+                                <i class="bi bi-github display-1 mb-3"></i>
+                                <h4>Source Code</h4>
+                                <p>Build from source</p>
+                                <a href="#" class="btn btn-light btn-lg w-100">
+                                    <i class="bi bi-github me-2"></i> View on GitHub
+                                </a>
+                                <small class="d-block mt-2">MIT License</small>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Footer -->
+    <footer class="py-4 bg-dark text-white">
+        <div class="container">
+            <div class="row">
+                <div class="col-md-4">
+                    <h5><i class="bi bi-cpu-fill"></i> BorgOS</h5>
+                    <p class="text-muted">
+                        Autonomous AI Operating System
+                    </p>
+                    <div class="social-links">
+                        <a href="#" class="text-white me-3"><i class="bi bi-github"></i></a>
+                        <a href="#" class="text-white me-3"><i class="bi bi-twitter"></i></a>
+                        <a href="#" class="text-white me-3"><i class="bi bi-discord"></i></a>
+                        <a href="#" class="text-white"><i class="bi bi-reddit"></i></a>
+                    </div>
+                </div>
+                <div class="col-md-4">
+                    <h6>Resources</h6>
+                    <ul class="list-unstyled">
+                        <li><a href="#" class="text-muted">Documentation</a></li>
+                        <li><a href="#" class="text-muted">API Reference</a></li>
+                        <li><a href="#" class="text-muted">Tutorials</a></li>
+                        <li><a href="#" class="text-muted">Community Forum</a></li>
+                    </ul>
+                </div>
+                <div class="col-md-4">
+                    <h6>Legal</h6>
+                    <ul class="list-unstyled">
+                        <li><a href="#" class="text-muted">License (MIT)</a></li>
+                        <li><a href="#" class="text-muted">Privacy Policy</a></li>
+                        <li><a href="#" class="text-muted">Terms of Service</a></li>
+                        <li><a href="#" class="text-muted">Security</a></li>
+                    </ul>
+                </div>
+            </div>
+            <hr class="my-4 border-secondary">
+            <div class="text-center text-muted">
+                <p class="mb-0">&copy; 2025 BorgOS. Built with privacy in mind.</p>
+            </div>
+        </div>
+    </footer>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="https://unpkg.com/aos@2.3.1/dist/aos.js"></script>
+    <script>
+        // Initialize AOS
+        AOS.init({
+            duration: 1000,
+            once: true
+        });
+        
+        // Smooth scrolling
+        document.querySelectorAll('a[href^="#"]').forEach(anchor => {
+            anchor.addEventListener('click', function (e) {
+                e.preventDefault();
+                const target = document.querySelector(this.getAttribute('href'));
+                if (target) {
+                    target.scrollIntoView({
+                        behavior: 'smooth',
+                        block: 'start'
+                    });
+                }
+            });
+        });
+        
+        // Navbar background on scroll
+        window.addEventListener('scroll', function() {
+            const navbar = document.querySelector('.navbar');
+            if (window.scrollY > 50) {
+                navbar.style.background = 'rgba(15, 15, 35, 0.95)';
+                navbar.style.backdropFilter = 'blur(10px)';
+            } else {
+                navbar.style.background = 'transparent';
+            }
+        });
+        
+        // Particle animation
+        function createParticle() {
+            const particle = document.createElement('div');
+            particle.className = 'particle';
+            particle.style.left = Math.random() * 100 + '%';
+            particle.style.animationDuration = (Math.random() * 3 + 2) + 's';
+            particle.style.opacity = Math.random();
+            document.querySelector('.hero-particles').appendChild(particle);
+            
+            setTimeout(() => particle.remove(), 5000);
+        }
+        
+        setInterval(createParticle, 300);
+    </script>
+</body>
+</html>

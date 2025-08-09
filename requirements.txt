@@ -1,0 +1,54 @@
+# BorgOS Core Dependencies
+# Python 3.11+ required
+
+# Web Framework
+flask==3.0.0
+gunicorn==21.2.0
+
+# System Monitoring
+psutil==5.9.8
+
+# HTTP Requests
+requests==2.31.0
+
+# Configuration
+python-dotenv==1.0.0
+pyyaml==6.0.1
+PyYAML==6.0.1
+
+# CLI Tools
+click==8.1.7
+rich==13.7.0
+
+# AI/LLM Integration
+openai==1.10.0
+ollama==0.1.7
+
+# Vector Database
+chromadb==0.4.22
+sentence-transformers==2.3.1
+
+# MCP Protocol
+mcp==0.1.0
+anthropic==0.15.0
+
+# Async Support
+asyncio==3.4.3
+aiofiles==23.2.1
+
+# Security
+cryptography==41.0.7
+
+# Testing (optional, for development)
+pytest==7.4.4
+pytest-cov==4.1.0
+pytest-asyncio==0.21.1
+pytest-mock==3.12.0
+
+# Linting (optional, for development)
+ruff==0.1.11
+bandit==1.7.6
+
+# Documentation (optional)
+sphinx==7.2.6
+sphinx-rtd-theme==2.0.0

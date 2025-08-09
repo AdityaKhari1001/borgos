@@ -1,0 +1,41 @@
+FROM python:3.11-slim
+
+WORKDIR /app
+
+# Install system dependencies
+RUN apt-get update && apt-get install -y \
+    gcc \
+    g++ \
+    git \
+    curl \
+    build-essential \
+    && rm -rf /var/lib/apt/lists/*
+
+# Copy requirements
+COPY core/requirements.txt .
+RUN pip install --no-cache-dir -r requirements.txt
+
+# Install Agent Zero requirements if present
+COPY ../agent-zero/requirements.txt /agent-zero-requirements.txt 2>/dev/null || echo "No Agent Zero requirements" > /agent-zero-requirements.txt
+RUN if [ -s /agent-zero-requirements.txt ]; then pip install --no-cache-dir -r /agent-zero-requirements.txt; fi
+
+# Copy application code
+COPY core/ .
+COPY database/ /database/
+
+# Create necessary directories
+RUN mkdir -p /data /logs
+
+# Environment variables
+ENV PYTHONUNBUFFERED=1
+ENV PYTHONPATH=/app:/agent-zero
+
+# Expose port
+EXPOSE 8081
+
+# Health check
+HEALTHCHECK --interval=30s --timeout=3s --start-period=5s --retries=3 \
+    CMD python -c "import requests; requests.get('http://localhost:8081/health')" || exit 1
+
+# Run the application
+CMD ["python", "main.py"]

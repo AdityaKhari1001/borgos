@@ -1,0 +1,35 @@
+FROM --platform=linux/amd64 debian:12
+
+# Install required packages for ISO building
+RUN apt-get update && apt-get install -y \
+    live-build \
+    debootstrap \
+    squashfs-tools \
+    xorriso \
+    isolinux \
+    syslinux-common \
+    genisoimage \
+    wget \
+    curl \
+    git \
+    python3 \
+    python3-pip \
+    python3-venv \
+    ca-certificates \
+    cpio \
+    rsync \
+    dosfstools \
+    mtools \
+    && rm -rf /var/lib/apt/lists/*
+
+# Set working directory
+WORKDIR /build
+
+# Copy BorgOS files
+COPY . /borgos-source/
+
+# Create build script
+RUN chmod +x /borgos-source/*.sh 2>/dev/null || true
+
+# Entry point
+CMD ["/borgos-source/docker_build_iso.sh"]

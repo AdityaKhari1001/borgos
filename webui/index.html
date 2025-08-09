@@ -1,0 +1,795 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>BorgOS Dashboard - AI-First Operating System</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        :root {
+            --bg-primary: #0a0a0a;
+            --bg-secondary: #1a1a1a;
+            --bg-tertiary: #2a2a2a;
+            --text-primary: #ffffff;
+            --text-secondary: #a0a0a0;
+            --accent-primary: #00ff88;
+            --accent-secondary: #0088ff;
+            --accent-danger: #ff4444;
+            --accent-warning: #ffaa00;
+            --border-color: #333333;
+        }
+
+        body {
+            font-family: 'SF Pro Display', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: var(--bg-primary);
+            color: var(--text-primary);
+            height: 100vh;
+            overflow: hidden;
+        }
+
+        /* Header */
+        .header {
+            background: var(--bg-secondary);
+            border-bottom: 1px solid var(--border-color);
+            padding: 0.75rem 1.5rem;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            height: 60px;
+        }
+
+        .logo {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            font-size: 1.25rem;
+            font-weight: 600;
+        }
+
+        .logo-icon {
+            width: 32px;
+            height: 32px;
+            background: linear-gradient(135deg, var(--accent-primary), var(--accent-secondary));
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.5rem;
+        }
+
+        .status-bar {
+            display: flex;
+            gap: 2rem;
+            align-items: center;
+        }
+
+        .status-item {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            font-size: 0.875rem;
+        }
+
+        .status-indicator {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background: var(--accent-primary);
+            animation: pulse 2s infinite;
+        }
+
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.5; }
+        }
+
+        /* Main Layout */
+        .main-container {
+            display: flex;
+            height: calc(100vh - 60px);
+        }
+
+        /* Left Panel - Chat */
+        .left-panel {
+            width: 30%;
+            min-width: 350px;
+            background: var(--bg-secondary);
+            border-right: 1px solid var(--border-color);
+            display: flex;
+            flex-direction: column;
+        }
+
+        .chat-header {
+            padding: 1rem;
+            border-bottom: 1px solid var(--border-color);
+            background: var(--bg-tertiary);
+        }
+
+        .chat-messages {
+            flex: 1;
+            overflow-y: auto;
+            padding: 1rem;
+            display: flex;
+            flex-direction: column;
+            gap: 1rem;
+        }
+
+        .message {
+            padding: 0.75rem;
+            border-radius: 8px;
+            max-width: 85%;
+            word-wrap: break-word;
+        }
+
+        .message.user {
+            background: var(--accent-secondary);
+            align-self: flex-end;
+            margin-left: auto;
+        }
+
+        .message.assistant {
+            background: var(--bg-tertiary);
+            border: 1px solid var(--border-color);
+        }
+
+        .chat-input-container {
+            padding: 1rem;
+            border-top: 1px solid var(--border-color);
+            background: var(--bg-tertiary);
+        }
+
+        .chat-input {
+            width: 100%;
+            padding: 0.75rem;
+            background: var(--bg-secondary);
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            color: var(--text-primary);
+            font-size: 0.875rem;
+            resize: none;
+            outline: none;
+        }
+
+        .chat-input:focus {
+            border-color: var(--accent-primary);
+        }
+
+        /* Right Panel - Content */
+        .right-panel {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            background: var(--bg-primary);
+        }
+
+        /* Tabs */
+        .tabs {
+            display: flex;
+            background: var(--bg-secondary);
+            border-bottom: 1px solid var(--border-color);
+            padding: 0 1rem;
+        }
+
+        .tab {
+            padding: 1rem 1.5rem;
+            cursor: pointer;
+            border-bottom: 2px solid transparent;
+            transition: all 0.3s;
+            font-size: 0.875rem;
+            color: var(--text-secondary);
+        }
+
+        .tab:hover {
+            color: var(--text-primary);
+        }
+
+        .tab.active {
+            color: var(--accent-primary);
+            border-bottom-color: var(--accent-primary);
+        }
+
+        /* Content Area */
+        .content-area {
+            flex: 1;
+            padding: 1.5rem;
+            overflow-y: auto;
+        }
+
+        /* Projects Grid */
+        .projects-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+            gap: 1rem;
+        }
+
+        .project-card {
+            background: var(--bg-secondary);
+            border: 1px solid var(--border-color);
+            border-radius: 12px;
+            padding: 1.25rem;
+            transition: all 0.3s;
+            cursor: pointer;
+        }
+
+        .project-card:hover {
+            border-color: var(--accent-primary);
+            transform: translateY(-2px);
+        }
+
+        .project-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 1rem;
+        }
+
+        .project-name {
+            font-weight: 600;
+            font-size: 1rem;
+        }
+
+        .project-status {
+            padding: 0.25rem 0.5rem;
+            border-radius: 4px;
+            font-size: 0.75rem;
+            font-weight: 500;
+        }
+
+        .status-active {
+            background: rgba(0, 255, 136, 0.2);
+            color: var(--accent-primary);
+        }
+
+        .status-inactive {
+            background: rgba(160, 160, 160, 0.2);
+            color: var(--text-secondary);
+        }
+
+        .project-metrics {
+            display: flex;
+            gap: 1rem;
+            margin-top: 0.75rem;
+        }
+
+        .metric {
+            display: flex;
+            flex-direction: column;
+            gap: 0.25rem;
+        }
+
+        .metric-label {
+            font-size: 0.75rem;
+            color: var(--text-secondary);
+        }
+
+        .metric-value {
+            font-size: 1.25rem;
+            font-weight: 600;
+        }
+
+        /* Deployments Table */
+        .deployments-table {
+            width: 100%;
+            background: var(--bg-secondary);
+            border-radius: 12px;
+            overflow: hidden;
+            border: 1px solid var(--border-color);
+        }
+
+        .table-header {
+            display: grid;
+            grid-template-columns: 2fr 1fr 1fr 1fr 1fr;
+            padding: 1rem;
+            background: var(--bg-tertiary);
+            font-weight: 600;
+            font-size: 0.875rem;
+            color: var(--text-secondary);
+        }
+
+        .table-row {
+            display: grid;
+            grid-template-columns: 2fr 1fr 1fr 1fr 1fr;
+            padding: 1rem;
+            border-top: 1px solid var(--border-color);
+            align-items: center;
+            transition: background 0.2s;
+        }
+
+        .table-row:hover {
+            background: var(--bg-tertiary);
+        }
+
+        .deployment-name {
+            font-weight: 500;
+        }
+
+        .port-badge {
+            padding: 0.25rem 0.5rem;
+            background: var(--bg-tertiary);
+            border-radius: 4px;
+            font-family: 'SF Mono', monospace;
+            font-size: 0.875rem;
+        }
+
+        .status-badge {
+            padding: 0.25rem 0.5rem;
+            border-radius: 4px;
+            font-size: 0.75rem;
+            font-weight: 500;
+            text-align: center;
+        }
+
+        .status-running {
+            background: rgba(0, 255, 136, 0.2);
+            color: var(--accent-primary);
+        }
+
+        .status-stopped {
+            background: rgba(255, 68, 68, 0.2);
+            color: var(--accent-danger);
+        }
+
+        /* Error Logs */
+        .error-log {
+            background: var(--bg-secondary);
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            padding: 1rem;
+            margin-bottom: 0.75rem;
+        }
+
+        .error-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 0.5rem;
+        }
+
+        .error-type {
+            color: var(--accent-danger);
+            font-weight: 500;
+        }
+
+        .error-time {
+            color: var(--text-secondary);
+            font-size: 0.75rem;
+        }
+
+        .error-message {
+            color: var(--text-secondary);
+            font-size: 0.875rem;
+            margin-top: 0.5rem;
+        }
+
+        /* Loading Spinner */
+        .spinner {
+            width: 40px;
+            height: 40px;
+            border: 4px solid var(--bg-tertiary);
+            border-top-color: var(--accent-primary);
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin: 2rem auto;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        /* Scrollbar */
+        ::-webkit-scrollbar {
+            width: 8px;
+            height: 8px;
+        }
+
+        ::-webkit-scrollbar-track {
+            background: var(--bg-secondary);
+        }
+
+        ::-webkit-scrollbar-thumb {
+            background: var(--bg-tertiary);
+            border-radius: 4px;
+        }
+
+        ::-webkit-scrollbar-thumb:hover {
+            background: #444;
+        }
+    </style>
+</head>
+<body>
+    <!-- Header -->
+    <div class="header">
+        <div class="logo">
+            <div class="logo-icon">🧠</div>
+            <span>BorgOS</span>
+        </div>
+        <div class="status-bar">
+            <div class="status-item">
+                <div class="status-indicator"></div>
+                <span>System: Online</span>
+            </div>
+            <div class="status-item">
+                <span id="cpu-usage">CPU: 0%</span>
+            </div>
+            <div class="status-item">
+                <span id="mem-usage">MEM: 0%</span>
+            </div>
+            <div class="status-item">
+                <span id="active-deployments">Deployments: 0</span>
+            </div>
+        </div>
+    </div>
+
+    <!-- Main Container -->
+    <div class="main-container">
+        <!-- Left Panel - Chat -->
+        <div class="left-panel">
+            <div class="chat-header">
+                <h3>AI Assistant</h3>
+            </div>
+            <div class="chat-messages" id="chat-messages">
+                <div class="message assistant">
+                    Welcome to BorgOS! I'm your AI assistant. How can I help you manage your projects and deployments today?
+                </div>
+            </div>
+            <div class="chat-input-container">
+                <textarea class="chat-input" id="chat-input" 
+                    placeholder="Ask me anything..." 
+                    rows="3"></textarea>
+            </div>
+        </div>
+
+        <!-- Right Panel - Content -->
+        <div class="right-panel">
+            <div class="tabs">
+                <div class="tab active" data-tab="projects">Projects</div>
+                <div class="tab" data-tab="deployments">Deployments</div>
+                <div class="tab" data-tab="errors">Error Logs</div>
+                <div class="tab" data-tab="metrics">Metrics</div>
+            </div>
+            <div class="content-area" id="content-area">
+                <!-- Projects View -->
+                <div id="projects-view" class="tab-content">
+                    <h2 style="margin-bottom: 1.5rem;">Active Projects</h2>
+                    <div class="projects-grid" id="projects-grid">
+                        <div class="spinner"></div>
+                    </div>
+                </div>
+
+                <!-- Deployments View -->
+                <div id="deployments-view" class="tab-content" style="display: none;">
+                    <h2 style="margin-bottom: 1.5rem;">Deployment Management</h2>
+                    <div class="deployments-table">
+                        <div class="table-header">
+                            <div>Name</div>
+                            <div>Port</div>
+                            <div>Status</div>
+                            <div>CPU</div>
+                            <div>Memory</div>
+                        </div>
+                        <div id="deployments-list">
+                            <div class="spinner"></div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Error Logs View -->
+                <div id="errors-view" class="tab-content" style="display: none;">
+                    <h2 style="margin-bottom: 1.5rem;">Recent Errors</h2>
+                    <div id="errors-list">
+                        <div class="spinner"></div>
+                    </div>
+                </div>
+
+                <!-- Metrics View -->
+                <div id="metrics-view" class="tab-content" style="display: none;">
+                    <h2 style="margin-bottom: 1.5rem;">System Metrics</h2>
+                    <div id="metrics-content">
+                        <div class="spinner"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Configuration
+        const API_URL = window.location.hostname === 'localhost' 
+            ? 'http://localhost:8081' 
+            : `http://${window.location.hostname}:8081`;
+        
+        const WS_URL = window.location.hostname === 'localhost'
+            ? 'ws://localhost:8081/ws'
+            : `ws://${window.location.hostname}:8081/ws`;
+
+        // WebSocket connection
+        let ws = null;
+
+        // Initialize WebSocket
+        function initWebSocket() {
+            ws = new WebSocket(WS_URL);
+            
+            ws.onopen = () => {
+                console.log('WebSocket connected');
+            };
+            
+            ws.onmessage = (event) => {
+                const data = JSON.parse(event.data);
+                handleWebSocketMessage(data);
+            };
+            
+            ws.onerror = (error) => {
+                console.error('WebSocket error:', error);
+            };
+            
+            ws.onclose = () => {
+                console.log('WebSocket disconnected, reconnecting in 5s...');
+                setTimeout(initWebSocket, 5000);
+            };
+        }
+
+        // Handle WebSocket messages
+        function handleWebSocketMessage(data) {
+            switch(data.type) {
+                case 'project_created':
+                case 'project_updated':
+                    loadProjects();
+                    break;
+                case 'deployment_created':
+                case 'deployment_updated':
+                    loadDeployments();
+                    break;
+                case 'error_logged':
+                    loadErrors();
+                    break;
+                case 'status_update':
+                    updateSystemStatus(data.data);
+                    break;
+            }
+        }
+
+        // Tab switching
+        document.querySelectorAll('.tab').forEach(tab => {
+            tab.addEventListener('click', () => {
+                // Update active tab
+                document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+                tab.classList.add('active');
+                
+                // Show corresponding content
+                const tabName = tab.dataset.tab;
+                document.querySelectorAll('.tab-content').forEach(content => {
+                    content.style.display = 'none';
+                });
+                document.getElementById(`${tabName}-view`).style.display = 'block';
+                
+                // Load data for the tab
+                switch(tabName) {
+                    case 'projects':
+                        loadProjects();
+                        break;
+                    case 'deployments':
+                        loadDeployments();
+                        break;
+                    case 'errors':
+                        loadErrors();
+                        break;
+                    case 'metrics':
+                        loadMetrics();
+                        break;
+                }
+            });
+        });
+
+        // Load projects
+        async function loadProjects() {
+            try {
+                const response = await fetch(`${API_URL}/api/v1/projects`);
+                const projects = await response.json();
+                
+                const grid = document.getElementById('projects-grid');
+                grid.innerHTML = '';
+                
+                projects.forEach(project => {
+                    const card = document.createElement('div');
+                    card.className = 'project-card';
+                    card.innerHTML = `
+                        <div class="project-header">
+                            <div class="project-name">${project.name}</div>
+                            <div class="project-status ${project.is_active ? 'status-active' : 'status-inactive'}">
+                                ${project.is_active ? 'Active' : 'Inactive'}
+                            </div>
+                        </div>
+                        <div style="color: var(--text-secondary); font-size: 0.875rem; margin-bottom: 0.5rem;">
+                            ${project.path}
+                        </div>
+                        <div class="project-metrics">
+                            <div class="metric">
+                                <div class="metric-label">Health</div>
+                                <div class="metric-value" style="color: ${getHealthColor(project.health_score)}">
+                                    ${project.health_score}%
+                                </div>
+                            </div>
+                            <div class="metric">
+                                <div class="metric-label">Vibe</div>
+                                <div class="metric-value" style="color: var(--accent-primary)">
+                                    ${project.vibe_score}%
+                                </div>
+                            </div>
+                            <div class="metric">
+                                <div class="metric-label">Eco</div>
+                                <div class="metric-value" style="color: var(--accent-secondary)">
+                                    ${project.eco_score}%
+                                </div>
+                            </div>
+                        </div>
+                    `;
+                    grid.appendChild(card);
+                });
+                
+                if (projects.length === 0) {
+                    grid.innerHTML = '<div style="text-align: center; color: var(--text-secondary);">No projects found</div>';
+                }
+            } catch (error) {
+                console.error('Error loading projects:', error);
+            }
+        }
+
+        // Load deployments
+        async function loadDeployments() {
+            try {
+                const response = await fetch(`${API_URL}/api/v1/deployments`);
+                const deployments = await response.json();
+                
+                const list = document.getElementById('deployments-list');
+                list.innerHTML = '';
+                
+                deployments.forEach(deployment => {
+                    const row = document.createElement('div');
+                    row.className = 'table-row';
+                    row.innerHTML = `
+                        <div class="deployment-name">${deployment.name}</div>
+                        <div><span class="port-badge">:${deployment.port}</span></div>
+                        <div><span class="status-badge status-${deployment.status}">${deployment.status}</span></div>
+                        <div>${deployment.cpu_limit || 'N/A'}</div>
+                        <div>${deployment.memory_limit || 'N/A'}</div>
+                    `;
+                    list.appendChild(row);
+                });
+                
+                if (deployments.length === 0) {
+                    list.innerHTML = '<div style="text-align: center; padding: 2rem; color: var(--text-secondary);">No deployments found</div>';
+                }
+            } catch (error) {
+                console.error('Error loading deployments:', error);
+            }
+        }
+
+        // Load errors
+        async function loadErrors() {
+            try {
+                const response = await fetch(`${API_URL}/api/v1/errors?limit=20`);
+                const errors = await response.json();
+                
+                const list = document.getElementById('errors-list');
+                list.innerHTML = '';
+                
+                errors.forEach(error => {
+                    const log = document.createElement('div');
+                    log.className = 'error-log';
+                    log.innerHTML = `
+                        <div class="error-header">
+                            <div class="error-type">${error.error_type}</div>
+                            <div class="error-time">${new Date(error.occurred_at).toLocaleString()}</div>
+                        </div>
+                        <div style="font-size: 0.875rem;">
+                            ${error.project_name || 'Unknown Project'} 
+                            ${error.deployment_name ? `- ${error.deployment_name}` : ''}
+                        </div>
+                        <div class="error-message">${error.message}</div>
+                    `;
+                    list.appendChild(log);
+                });
+                
+                if (errors.length === 0) {
+                    list.innerHTML = '<div style="text-align: center; color: var(--text-secondary);">No errors found</div>';
+                }
+            } catch (error) {
+                console.error('Error loading errors:', error);
+            }
+        }
+
+        // Load metrics
+        async function loadMetrics() {
+            // TODO: Implement metrics visualization
+            document.getElementById('metrics-content').innerHTML = `
+                <div style="text-align: center; padding: 2rem; color: var(--text-secondary);">
+                    Metrics visualization coming soon...
+                </div>
+            `;
+        }
+
+        // Load system status
+        async function loadSystemStatus() {
+            try {
+                const response = await fetch(`${API_URL}/api/v1/status`);
+                const status = await response.json();
+                
+                document.getElementById('cpu-usage').textContent = `CPU: ${status.cpu_percent.toFixed(1)}%`;
+                document.getElementById('mem-usage').textContent = `MEM: ${status.memory_percent.toFixed(1)}%`;
+                document.getElementById('active-deployments').textContent = `Deployments: ${status.active_deployments}`;
+            } catch (error) {
+                console.error('Error loading system status:', error);
+            }
+        }
+
+        // Update system status from WebSocket
+        function updateSystemStatus(status) {
+            if (status.cpu_percent !== undefined) {
+                document.getElementById('cpu-usage').textContent = `CPU: ${status.cpu_percent.toFixed(1)}%`;
+            }
+            if (status.memory_percent !== undefined) {
+                document.getElementById('mem-usage').textContent = `MEM: ${status.memory_percent.toFixed(1)}%`;
+            }
+            if (status.active_deployments !== undefined) {
+                document.getElementById('active-deployments').textContent = `Deployments: ${status.active_deployments}`;
+            }
+        }
+
+        // Chat functionality
+        const chatInput = document.getElementById('chat-input');
+        const chatMessages = document.getElementById('chat-messages');
+
+        chatInput.addEventListener('keydown', async (e) => {
+            if (e.key === 'Enter' && !e.shiftKey) {
+                e.preventDefault();
+                const message = chatInput.value.trim();
+                if (message) {
+                    // Add user message
+                    addChatMessage(message, 'user');
+                    chatInput.value = '';
+                    
+                    // Send to backend (TODO: Implement actual AI integration)
+                    try {
+                        // For now, just echo back
+                        setTimeout(() => {
+                            addChatMessage(`I received: "${message}". AI integration coming soon!`, 'assistant');
+                        }, 500);
+                    } catch (error) {
+                        addChatMessage('Sorry, I encountered an error processing your request.', 'assistant');
+                    }
+                }
+            }
+        });
+
+        function addChatMessage(text, type) {
+            const message = document.createElement('div');
+            message.className = `message ${type}`;
+            message.textContent = text;
+            chatMessages.appendChild(message);
+            chatMessages.scrollTop = chatMessages.scrollHeight;
+        }
+
+        // Helper functions
+        function getHealthColor(score) {
+            if (score >= 80) return 'var(--accent-primary)';
+            if (score >= 50) return 'var(--accent-warning)';
+            return 'var(--accent-danger)';
+        }
+
+        // Initialize
+        document.addEventListener('DOMContentLoaded', () => {
+            initWebSocket();
+            loadProjects();
+            loadSystemStatus();
+            
+            // Refresh status every 5 seconds
+            setInterval(loadSystemStatus, 5000);
+        });
+    </script>
+</body>
+</html>

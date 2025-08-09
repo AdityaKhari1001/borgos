@@ -1,0 +1,50 @@
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: borgos-ingress
+  namespace: borgos
+  annotations:
+    kubernetes.io/ingress.class: nginx
+    cert-manager.io/cluster-issuer: letsencrypt-prod
+    nginx.ingress.kubernetes.io/proxy-body-size: "100m"
+    nginx.ingress.kubernetes.io/proxy-read-timeout: "600"
+    nginx.ingress.kubernetes.io/proxy-send-timeout: "600"
+    nginx.ingress.kubernetes.io/enable-cors: "true"
+spec:
+  tls:
+  - hosts:
+    - borgos.ai
+    - dashboard.borgos.ai
+    - api.borgos.ai
+    secretName: borgos-tls
+  rules:
+  - host: borgos.ai
+    http:
+      paths:
+      - path: /
+        pathType: Prefix
+        backend:
+          service:
+            name: borgos-website-service
+            port:
+              number: 80
+  - host: dashboard.borgos.ai
+    http:
+      paths:
+      - path: /
+        pathType: Prefix
+        backend:
+          service:
+            name: borgos-dashboard-service
+            port:
+              number: 8080
+  - host: api.borgos.ai
+    http:
+      paths:
+      - path: /ollama
+        pathType: Prefix
+        backend:
+          service:
+            name: ollama-service
+            port:
+              number: 11434

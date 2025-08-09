@@ -1,0 +1,110 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: borgos-dashboard
+  namespace: borgos
+  labels:
+    app: borgos-dashboard
+    component: dashboard
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: borgos-dashboard
+  template:
+    metadata:
+      labels:
+        app: borgos-dashboard
+        component: dashboard
+    spec:
+      containers:
+      - name: dashboard
+        image: borgos/dashboard:latest
+        imagePullPolicy: Always
+        ports:
+        - containerPort: 8080
+          name: http
+        env:
+        - name: FLASK_ENV
+          value: "production"
+        - name: SECRET_KEY
+          valueFrom:
+            secretKeyRef:
+              name: borgos-secrets
+              key: secret-key
+        resources:
+          requests:
+            memory: "256Mi"
+            cpu: "250m"
+          limits:
+            memory: "512Mi"
+            cpu: "500m"
+        livenessProbe:
+          httpGet:
+            path: /
+            port: 8080
+          initialDelaySeconds: 30
+          periodSeconds: 10
+        readinessProbe:
+          httpGet:
+            path: /
+            port: 8080
+          initialDelaySeconds: 5
+          periodSeconds: 5
+        volumeMounts:
+        - name: config
+          mountPath: /etc/borgos
+        - name: data
+          mountPath: /var/lib/borgos
+      volumes:
+      - name: config
+        configMap:
+          name: borgos-config
+      - name: data
+        persistentVolumeClaim:
+          claimName: borgos-data-pvc
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: borgos-dashboard-service
+  namespace: borgos
+  labels:
+    app: borgos-dashboard
+spec:
+  type: ClusterIP
+  ports:
+  - port: 8080
+    targetPort: 8080
+    protocol: TCP
+    name: http
+  selector:
+    app: borgos-dashboard
+
+---
+apiVersion: autoscaling/v2
+kind: HorizontalPodAutoscaler
+metadata:
+  name: borgos-dashboard-hpa
+  namespace: borgos
+spec:
+  scaleTargetRef:
+    apiVersion: apps/v1
+    kind: Deployment
+    name: borgos-dashboard
+  minReplicas: 2
+  maxReplicas: 10
+  metrics:
+  - type: Resource
+    resource:
+      name: cpu
+      target:
+        type: Utilization
+        averageUtilization: 70
+  - type: Resource
+    resource:
+      name: memory
+      target:
+        type: Utilization
+        averageUtilization: 80

@@ -1,0 +1,140 @@
+name: BorgOS Build Pipeline
+
+on:
+  push:
+    branches: [ main, develop ]
+    tags: [ 'v*' ]
+  pull_request:
+    branches: [ main ]
+  workflow_dispatch:
+
+env:
+  ISO_TAG: borgos-${{ github.run_number }}
+  REGISTRY: ghcr.io
+  COVERAGE_THRESHOLD: 90
+
+jobs:
+  lint:
+    name: Lint & Security Scan
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.11'
+      
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install ruff bandit detect-secrets
+      
+      - name: Run linting
+        run: bash .ci/lint.sh
+      
+      - name: Upload lint artifacts
+        uses: actions/upload-artifact@v3
+        with:
+          name: lint-reports
+          path: artifacts/
+
+  test:
+    name: Unit Tests
+    runs-on: ubuntu-latest
+    needs: lint
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.11'
+      
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+          pip install pytest pytest-cov pytest-asyncio pytest-mock
+      
+      - name: Run tests
+        run: bash .ci/test.sh
+      
+      - name: Upload coverage reports
+        uses: codecov/codecov-action@v3
+        with:
+          file: ./artifacts/coverage.xml
+          flags: unittests
+      
+      - name: Upload test artifacts
+        uses: actions/upload-artifact@v3
+        with:
+          name: test-reports
+          path: artifacts/
+
+  build-iso:
+    name: Build ISO
+    runs-on: ubuntu-latest
+    needs: test
+    if: github.event_name == 'push' || github.event_name == 'workflow_dispatch'
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Install build dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y live-build debootstrap squashfs-tools xorriso \
+            syslinux isolinux wget curl git ca-certificates
+      
+      - name: Build ISO
+        run: |
+          sudo ISO_TAG=${{ env.ISO_TAG }} bash iso-builder/borgos_iso_builder.sh
+      
+      - name: Upload ISO artifact
+        uses: actions/upload-artifact@v3
+        with:
+          name: borgos-iso
+          path: out/ISO/*.iso
+
+  build-docker:
+    name: Build Docker Images
+    runs-on: ubuntu-latest
+    needs: test
+    permissions:
+      contents: read
+      packages: write
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Log in to GitHub Container Registry
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+      
+      - name: Build and push Docker images
+        run: |
+          PUSH=true ISO_TAG=${{ env.ISO_TAG }} bash .ci/docker_build.sh
+
+  release:
+    name: Create Release
+    runs-on: ubuntu-latest
+    needs: [build-iso, build-docker]
+    if: startsWith(github.ref, 'refs/tags/')
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Download ISO artifact
+        uses: actions/download-artifact@v3
+        with:
+          name: borgos-iso
+          path: out/ISO/
+      
+      - name: Create Release
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          ISO_TAG=${{ env.ISO_TAG }} bash .ci/release.sh

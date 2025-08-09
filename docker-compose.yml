@@ -1,0 +1,150 @@
+version: '3.8'
+
+services:
+  # PostgreSQL Database
+  postgres:
+    image: postgres:15-alpine
+    container_name: borgos-postgres
+    environment:
+      - POSTGRES_USER=borgos
+      - POSTGRES_PASSWORD=${DB_PASSWORD:-borgos123}
+      - POSTGRES_DB=borgos
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+      - ./database/init.sql:/docker-entrypoint-initdb.d/init.sql
+    networks:
+      - borgos-network
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U borgos"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # Redis Cache
+  redis:
+    image: redis:7-alpine
+    container_name: borgos-redis
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis-data:/data
+    networks:
+      - borgos-network
+    restart: unless-stopped
+    command: redis-server --appendonly yes
+
+  # BorgOS Core API
+  borgos-api:
+    build:
+      context: ./core
+      dockerfile: Dockerfile
+    container_name: borgos-api
+    ports:
+      - "8081:8081"
+    environment:
+      - DATABASE_URL=postgresql://borgos:${DB_PASSWORD:-borgos123}@postgres:5432/borgos
+      - REDIS_URL=redis://redis:6379
+      - DB_HOST=postgres
+      - DB_PORT=5432
+      - DB_NAME=borgos
+      - DB_USER=borgos
+      - DB_PASSWORD=${DB_PASSWORD:-borgos123}
+      - REDIS_HOST=redis
+      - REDIS_PORT=6379
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_started
+    volumes:
+      - ./config:/app/config
+      - ./logs:/app/logs
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+    networks:
+      - borgos-network
+    restart: unless-stopped
+
+  # BorgOS Dashboard
+  borgos-dashboard:
+    build:
+      context: ./webui
+      dockerfile: Dockerfile
+    container_name: borgos-dashboard
+    ports:
+      - "8080:80"
+    environment:
+      - API_URL=http://borgos-api:8081
+    depends_on:
+      - borgos-api
+    networks:
+      - borgos-network
+    restart: unless-stopped
+
+  # ChromaDB Vector Database (optional)
+  chromadb:
+    image: chromadb/chroma:latest
+    container_name: borgos-chromadb
+    ports:
+      - "8000:8000"
+    volumes:
+      - chroma-data:/chroma/chroma
+    environment:
+      - IS_PERSISTENT=TRUE
+      - PERSIST_DIRECTORY=/chroma/chroma
+      - ANONYMIZED_TELEMETRY=FALSE
+    networks:
+      - borgos-network
+    restart: unless-stopped
+    profiles:
+      - vector
+
+  # Prometheus Monitoring (optional)
+  prometheus:
+    image: prom/prometheus:latest
+    container_name: borgos-prometheus
+    ports:
+      - "9090:9090"
+    volumes:
+      - ./monitoring/prometheus/prometheus.yml:/etc/prometheus/prometheus.yml
+      - prometheus-data:/prometheus
+    command:
+      - '--config.file=/etc/prometheus/prometheus.yml'
+      - '--storage.tsdb.path=/prometheus'
+    networks:
+      - borgos-network
+    restart: unless-stopped
+    profiles:
+      - monitoring
+
+  # Grafana Dashboard (optional)
+  grafana:
+    image: grafana/grafana:latest
+    container_name: borgos-grafana
+    ports:
+      - "3000:3000"
+    environment:
+      - GF_SECURITY_ADMIN_PASSWORD=${GRAFANA_PASSWORD:-admin}
+      - GF_INSTALL_PLUGINS=redis-datasource
+    volumes:
+      - grafana-data:/var/lib/grafana
+    networks:
+      - borgos-network
+    restart: unless-stopped
+    profiles:
+      - monitoring
+
+networks:
+  borgos-network:
+    driver: bridge
+    ipam:
+      config:
+        - subnet: 172.21.0.0/16
+
+volumes:
+  postgres-data:
+  redis-data:
+  borgos-data:
+  chroma-data:
+  prometheus-data:
+  grafana-data:
