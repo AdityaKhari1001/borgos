@@ -5,7 +5,8 @@
 # Force reinstall: curl -fsSL https://raw.githubusercontent.com/vizi2000/borgos/main/install.sh | bash -s -- --force
 # Installs complete AI-first system with all agents and DevOps tools
 
-set -e
+# Don't exit on errors - handle them gracefully
+set +e
 
 # Colors
 RED='\033[0;31m'
@@ -120,55 +121,87 @@ check_dependencies() {
 
 # Download BorgOS and Agent Zero
 download_borgos() {
-    log "Downloading BorgOS..."
+    log "Preparing BorgOS installation..."
     
-    # Create or clean directory
+    # Backup existing configuration if exists
     if [ -d "${INSTALL_DIR}" ]; then
-        warning "Directory ${INSTALL_DIR} exists. Backing up and cleaning..."
+        warning "Directory ${INSTALL_DIR} exists. Backing up configuration..."
         # Backup existing .env if exists
         if [ -f "${INSTALL_DIR}/.env" ]; then
-            cp ${INSTALL_DIR}/.env ${INSTALL_DIR}/.env.backup.$(date +%Y%m%d_%H%M%S)
+            cp ${INSTALL_DIR}/.env /tmp/.env.borgos.backup
             log "Backed up existing .env file"
         fi
-        # Remove old installation but keep data volumes
-        sudo rm -rf ${INSTALL_DIR}/.git
-        sudo rm -rf ${INSTALL_DIR}/core
-        sudo rm -rf ${INSTALL_DIR}/webui
-        sudo rm -rf ${INSTALL_DIR}/installer
-        sudo rm -rf ${INSTALL_DIR}/database
-        sudo rm -rf ${INSTALL_DIR}/agent-zero
-    else
-        sudo mkdir -p ${INSTALL_DIR}
-    fi
-    
-    sudo chown $USER:$USER ${INSTALL_DIR}
-    
-    # Clone BorgOS repository (force clone)
-    log "Installing BorgOS..."
-    cd /tmp
-    rm -rf borgos-temp
-    git clone ${REPO_URL} borgos-temp
-    cp -r borgos-temp/* ${INSTALL_DIR}/ 2>/dev/null || true
-    cp -r borgos-temp/.[^.]* ${INSTALL_DIR}/ 2>/dev/null || true
-    rm -rf borgos-temp
-    
-    # Clone Agent Zero (force clone)
-    log "Installing Agent Zero..."
-    cd /tmp
-    rm -rf agent-zero-temp
-    git clone ${AGENT_ZERO_REPO} agent-zero-temp
-    mv agent-zero-temp ${INSTALL_DIR}/agent-zero
-    
-    # Restore .env if backup exists
-    if [ -f "${INSTALL_DIR}/.env.backup."* ]; then
-        latest_backup=$(ls -t ${INSTALL_DIR}/.env.backup.* | head -1)
-        if [ ! -f "${INSTALL_DIR}/.env" ]; then
-            cp $latest_backup ${INSTALL_DIR}/.env
-            log "Restored .env from backup"
+        # Backup docker-compose overrides if exist
+        if [ -f "${INSTALL_DIR}/docker-compose.override.yml" ]; then
+            cp ${INSTALL_DIR}/docker-compose.override.yml /tmp/docker-compose.override.backup
         fi
     fi
     
+    # Always use temp directory for cloning to avoid git errors
+    TEMP_DIR="/tmp/borgos-install-$(date +%s)"
+    log "Downloading BorgOS to temporary directory..."
+    
+    # Clone BorgOS repository to temp
+    rm -rf ${TEMP_DIR}
+    git clone ${REPO_URL} ${TEMP_DIR}/borgos || {
+        error "Failed to clone BorgOS repository"
+    }
+    
+    # Clone Agent Zero to temp
+    log "Downloading Agent Zero..."
+    git clone ${AGENT_ZERO_REPO} ${TEMP_DIR}/agent-zero || {
+        warning "Failed to clone Agent Zero, will try to install later"
+    }
+    
+    # Create install directory if not exists
+    sudo mkdir -p ${INSTALL_DIR}
+    sudo chown $USER:$USER ${INSTALL_DIR}
+    
+    # Clean old installation files (but keep data and configs)
+    log "Cleaning old installation files..."
     cd ${INSTALL_DIR}
+    # Remove directories that will be replaced
+    for dir in core webui database installer k8s docs mcp_servers; do
+        [ -d "$dir" ] && rm -rf "$dir"
+    done
+    # Remove old docker-compose files
+    rm -f docker-compose.yml docker-compose-full.yml
+    # Remove old scripts
+    rm -f *.sh
+    
+    # Copy new files from temp
+    log "Installing BorgOS files..."
+    cp -r ${TEMP_DIR}/borgos/* ${INSTALL_DIR}/ 2>/dev/null || true
+    cp -r ${TEMP_DIR}/borgos/.[^.]* ${INSTALL_DIR}/ 2>/dev/null || true
+    
+    # Install Agent Zero
+    if [ -d "${TEMP_DIR}/agent-zero" ]; then
+        rm -rf ${INSTALL_DIR}/agent-zero
+        mv ${TEMP_DIR}/agent-zero ${INSTALL_DIR}/agent-zero
+        log "Agent Zero installed"
+    fi
+    
+    # Restore configuration
+    if [ -f /tmp/.env.borgos.backup ]; then
+        if [ ! -f "${INSTALL_DIR}/.env" ]; then
+            mv /tmp/.env.borgos.backup ${INSTALL_DIR}/.env
+            log "Restored .env configuration"
+        else
+            mv /tmp/.env.borgos.backup ${INSTALL_DIR}/.env.backup
+            log "Saved old .env as .env.backup"
+        fi
+    fi
+    
+    if [ -f /tmp/docker-compose.override.backup ]; then
+        mv /tmp/docker-compose.override.backup ${INSTALL_DIR}/docker-compose.override.yml
+        log "Restored docker-compose.override.yml"
+    fi
+    
+    # Clean up temp directory
+    rm -rf ${TEMP_DIR}
+    
+    cd ${INSTALL_DIR}
+    log "BorgOS downloaded successfully"
 }
 
 # Install Ollama
