@@ -21,8 +21,8 @@ REPO_URL="https://github.com/vizi2000/borgos"
 AGENT_ZERO_REPO="https://github.com/vizi2000/agent-zero"
 INSTALL_DIR="/opt/borgos"
 VERSION="2.0"
-DOMAIN="borg.tools.ddns.net"
-EMAIL="admin@borg.tools"
+DOMAIN="borgtools.ddns.net"
+EMAIL="admin@borgtools.ddns.net"
 
 # Parse arguments
 FORCE_INSTALL=false
@@ -55,7 +55,7 @@ show_banner() {
 ╔════════════════════════════════════════╗
 ║      🧠 BorgOS Complete v2.0          ║
 ║    AI-First Multi-Agent System        ║
-║     borg.tools.ddns.net               ║
+║     borgtools.ddns.net               ║
 ╚════════════════════════════════════════╝
 EOF
     echo -e "${NC}"
@@ -116,6 +116,32 @@ check_dependencies() {
         fi
     else
         log "Git found: $(git --version)"
+    fi
+    
+    # Check Node.js
+    if ! command -v node &> /dev/null; then
+        warning "Node.js not found. Installing..."
+        if [[ "$OS" == "linux" ]]; then
+            log "Installing Node.js 20.x..."
+            curl -fsSL https://deb.nodesource.com/setup_20.x | sudo -E bash -
+            sudo apt-get install -y nodejs || \
+            sudo yum install -y nodejs || \
+            sudo dnf install -y nodejs
+        elif [[ "$OS" == "macos" ]]; then
+            if command -v brew &> /dev/null; then
+                brew install node
+            else
+                error "Please install Node.js from https://nodejs.org"
+            fi
+        fi
+    else
+        log "Node.js found: $(node --version)"
+    fi
+    
+    # Install pnpm (faster npm alternative)
+    if ! command -v pnpm &> /dev/null; then
+        log "Installing pnpm..."
+        npm install -g pnpm 2>/dev/null || true
     fi
 }
 
@@ -219,15 +245,56 @@ install_ollama() {
         sudo systemctl enable ollama
         sudo systemctl start ollama
     fi
+}
+
+# Ensure Ollama is running and pull default model
+ensure_ollama_running() {
+    log "Ensuring Ollama is running with default model..."
     
-    # Pull Gemma 2B model
-    log "Pulling Gemma 2B model..."
-    ollama pull gemma:2b || warning "Model will be downloaded on first use"
+    # Wait for Ollama to be ready
+    local max_attempts=30
+    local attempt=0
     
-    # Pull additional models for better performance
-    log "Pulling additional AI models..."
+    while [ $attempt -lt $max_attempts ]; do
+        if curl -s http://localhost:11434/api/tags > /dev/null 2>&1; then
+            log "Ollama is running"
+            break
+        fi
+        
+        # Try to start Ollama if not running
+        if [ $attempt -eq 5 ]; then
+            log "Attempting to start Ollama service..."
+            if command -v systemctl > /dev/null; then
+                sudo systemctl restart ollama 2>/dev/null || true
+            else
+                ollama serve > /dev/null 2>&1 &
+            fi
+        fi
+        
+        sleep 2
+        attempt=$((attempt + 1))
+    done
+    
+    if [ $attempt -eq $max_attempts ]; then
+        warning "Ollama may not be running properly, will use Docker container"
+        return
+    fi
+    
+    # Pull default model (gemma:2b) immediately
+    log "Pulling default AI model (gemma:2b)..."
+    ollama pull gemma:2b || warning "Failed to pull gemma:2b"
+    
+    # Try to pull additional useful models
+    log "Pulling additional AI models for better performance..."
     ollama pull llama2:7b || true
     ollama pull codellama:7b || true
+    ollama pull mistral:7b || true
+    
+    # Set default model in environment
+    echo "# Default Ollama model" >> ${INSTALL_DIR}/.env
+    echo "DEFAULT_OLLAMA_MODEL=gemma:2b" >> ${INSTALL_DIR}/.env
+    
+    log "Ollama setup complete with default model"
 }
 
 # Deploy BorgOS
@@ -294,6 +361,177 @@ ENV
     docker compose ps
 }
 
+# Install OpenRouter API integration
+install_openrouter() {
+    log "Setting up OpenRouter API integration..."
+    
+    # Create scripts directory
+    mkdir -p ${INSTALL_DIR}/scripts
+    
+    # Add OpenRouter configuration to .env
+    cat >> ${INSTALL_DIR}/.env << 'ENV'
+
+# OpenRouter API Configuration
+OPENROUTER_API_KEY=${OPENROUTER_API_KEY:-}
+OPENROUTER_BASE_URL=https://openrouter.ai/api/v1
+OPENROUTER_DEFAULT_MODEL=google/gemma-2b-it:free
+OPENROUTER_FALLBACK_ENABLED=true
+
+# Available free models on OpenRouter
+# - google/gemma-2b-it:free
+# - meta-llama/llama-3.2-3b-instruct:free
+# - mistralai/mistral-7b-instruct:free
+# - huggingfaceh4/zephyr-7b-beta:free
+ENV
+    
+    # Create Node.js OpenRouter client
+    cat > ${INSTALL_DIR}/scripts/openrouter.js << 'SCRIPT'
+#!/usr/bin/env node
+const https = require('https');
+
+class OpenRouterClient {
+    constructor(apiKey) {
+        this.apiKey = apiKey || process.env.OPENROUTER_API_KEY;
+        this.baseUrl = 'openrouter.ai';
+    }
+    
+    async chat(prompt, model = 'google/gemma-2b-it:free') {
+        const data = JSON.stringify({
+            model: model,
+            messages: [{ role: 'user', content: prompt }]
+        });
+        
+        const options = {
+            hostname: this.baseUrl,
+            path: '/api/v1/chat/completions',
+            method: 'POST',
+            headers: {
+                'Authorization': `Bearer ${this.apiKey}`,
+                'Content-Type': 'application/json',
+                'HTTP-Referer': 'https://borgtools.ddns.net',
+                'X-Title': 'BorgOS'
+            }
+        };
+        
+        return new Promise((resolve, reject) => {
+            const req = https.request(options, (res) => {
+                let body = '';
+                res.on('data', chunk => body += chunk);
+                res.on('end', () => resolve(JSON.parse(body)));
+            });
+            req.on('error', reject);
+            req.write(data);
+            req.end();
+        });
+    }
+}
+
+module.exports = OpenRouterClient;
+
+// CLI usage
+if (require.main === module) {
+    const client = new OpenRouterClient();
+    const prompt = process.argv.slice(2).join(' ');
+    if (prompt) {
+        client.chat(prompt).then(console.log).catch(console.error);
+    } else {
+        console.log('Usage: openrouter "your prompt here"');
+    }
+}
+SCRIPT
+    
+    chmod +x ${INSTALL_DIR}/scripts/openrouter.js
+    
+    # Create Python OpenRouter client
+    cat > ${INSTALL_DIR}/scripts/openrouter.py << 'PYTHON'
+#!/usr/bin/env python3
+import os
+import json
+import sys
+try:
+    import requests
+except ImportError:
+    print("Installing requests...")
+    os.system("pip install requests")
+    import requests
+
+class OpenRouterClient:
+    def __init__(self, api_key=None):
+        self.api_key = api_key or os.getenv('OPENROUTER_API_KEY')
+        self.base_url = 'https://openrouter.ai/api/v1'
+        
+    def chat(self, prompt, model='google/gemma-2b-it:free'):
+        headers = {
+            'Authorization': f'Bearer {self.api_key}',
+            'Content-Type': 'application/json',
+            'HTTP-Referer': 'https://borgtools.ddns.net',
+            'X-Title': 'BorgOS'
+        }
+        
+        data = {
+            'model': model,
+            'messages': [{'role': 'user', 'content': prompt}]
+        }
+        
+        response = requests.post(
+            f'{self.base_url}/chat/completions',
+            headers=headers,
+            json=data
+        )
+        return response.json()
+
+if __name__ == '__main__':
+    client = OpenRouterClient()
+    if len(sys.argv) > 1:
+        prompt = ' '.join(sys.argv[1:])
+        result = client.chat(prompt)
+        if 'choices' in result:
+            print(result['choices'][0]['message']['content'])
+        else:
+            print(json.dumps(result, indent=2))
+    else:
+        print('Usage: openrouter.py "your prompt here"')
+PYTHON
+    
+    chmod +x ${INSTALL_DIR}/scripts/openrouter.py
+    
+    # Create unified AI CLI wrapper
+    cat > ${INSTALL_DIR}/scripts/ai << 'AI_WRAPPER'
+#!/bin/bash
+# Unified AI CLI - tries Ollama first, falls back to OpenRouter
+
+prompt="$*"
+
+if [ -z "$prompt" ]; then
+    echo "Usage: ai <your prompt>"
+    exit 1
+fi
+
+# Try Ollama first
+if curl -s http://localhost:11434/api/tags > /dev/null 2>&1; then
+    echo "$prompt" | ollama run gemma:2b 2>/dev/null
+    exit_code=$?
+    if [ $exit_code -eq 0 ]; then
+        exit 0
+    fi
+fi
+
+# Fall back to OpenRouter if configured
+if [ -n "$OPENROUTER_API_KEY" ]; then
+    python3 /opt/borgos/scripts/openrouter.py "$prompt"
+else
+    echo "No AI service available. Set OPENROUTER_API_KEY or ensure Ollama is running."
+    exit 1
+fi
+AI_WRAPPER
+    
+    chmod +x ${INSTALL_DIR}/scripts/ai
+    sudo ln -sf ${INSTALL_DIR}/scripts/ai /usr/local/bin/ai
+    
+    log "OpenRouter API configured. Add your API key to .env to enable."
+    log "Use 'ai <prompt>' command for unified AI access"
+}
+
 # Install DevOps tools
 install_devops_tools() {
     log "Installing DevOps tools..."
@@ -322,7 +560,7 @@ setup_nginx() {
     sudo tee /etc/nginx/sites-available/borgos > /dev/null << 'NGINX'
 # BorgOS Main Dashboard
 server {
-    server_name borg.tools.ddns.net;
+    server_name borgtools.ddns.net;
     
     location / {
         proxy_pass http://localhost:6969;
@@ -344,7 +582,7 @@ server {
 
 # Agent Zero
 server {
-    server_name agent.borg.tools.ddns.net;
+    server_name agent.borgtools.ddns.net;
     
     location / {
         proxy_pass http://localhost:8085;
@@ -357,7 +595,7 @@ server {
 
 # Zenith Coder
 server {
-    server_name zenith.borg.tools.ddns.net;
+    server_name zenith.borgtools.ddns.net;
     
     location / {
         proxy_pass http://localhost:3101;
@@ -370,7 +608,7 @@ server {
 
 # n8n Workflows
 server {
-    server_name n8n.borg.tools.ddns.net;
+    server_name n8n.borgtools.ddns.net;
     
     location / {
         proxy_pass http://localhost:5678;
@@ -383,7 +621,7 @@ server {
 
 # Portainer
 server {
-    server_name portainer.borg.tools.ddns.net;
+    server_name portainer.borgtools.ddns.net;
     
     location / {
         proxy_pass http://localhost:9000;
@@ -431,7 +669,7 @@ case "$1" in
         else
             docker compose up -d
         fi
-        echo "BorgOS started at https://borg.tools.ddns.net"
+        echo "BorgOS started at https://borgtools.ddns.net"
         ;;
     stop)
         if [ -f docker-compose-full.yml ]; then
@@ -471,11 +709,11 @@ case "$1" in
         echo "Usage: borgos {start|stop|status|logs|update}"
         echo ""
         echo "Access points:"
-        echo "  Main Dashboard: https://borg.tools.ddns.net"
-        echo "  Agent Zero: https://agent.borg.tools.ddns.net"
-        echo "  Zenith Coder: https://zenith.borg.tools.ddns.net"
-        echo "  n8n Workflows: https://n8n.borg.tools.ddns.net"
-        echo "  Portainer: https://portainer.borg.tools.ddns.net"
+        echo "  Main Dashboard: https://borgtools.ddns.net"
+        echo "  Agent Zero: https://agent.borgtools.ddns.net"
+        echo "  Zenith Coder: https://zenith.borgtools.ddns.net"
+        echo "  n8n Workflows: https://n8n.borgtools.ddns.net"
+        echo "  Portainer: https://portainer.borgtools.ddns.net"
         ;;
 esac
 SCRIPT
@@ -494,6 +732,8 @@ main() {
     # Install components
     download_borgos
     install_ollama
+    ensure_ollama_running
+    install_openrouter
     install_devops_tools
     deploy_borgos
     
@@ -510,11 +750,11 @@ main() {
     echo "  ✅ BorgOS v2.0 Installation Complete!"
     echo "═══════════════════════════════════════════════════════════════"
     echo ""
-    echo "  🌐 Main Dashboard: https://borg.tools.ddns.net"
-    echo "  🤖 Agent Zero: https://agent.borg.tools.ddns.net"
-    echo "  💻 Zenith Coder: https://zenith.borg.tools.ddns.net"
-    echo "  🔄 n8n Workflows: https://n8n.borg.tools.ddns.net"
-    echo "  🐳 Portainer: https://portainer.borg.tools.ddns.net"
+    echo "  🌐 Main Dashboard: https://borgtools.ddns.net"
+    echo "  🤖 Agent Zero: https://agent.borgtools.ddns.net"
+    echo "  💻 Zenith Coder: https://zenith.borgtools.ddns.net"
+    echo "  🔄 n8n Workflows: https://n8n.borgtools.ddns.net"
+    echo "  🐳 Portainer: https://portainer.borgtools.ddns.net"
     echo ""
     echo "  📡 API Endpoints:"
     echo "    • BorgOS API: http://localhost:8081"

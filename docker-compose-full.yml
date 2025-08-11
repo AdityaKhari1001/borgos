@@ -70,15 +70,31 @@ services:
       - "11434:11434"
     volumes:
       - ollama-data:/root/.ollama
+      - ./scripts/init-ollama.sh:/init-ollama.sh:ro
     environment:
       - OLLAMA_MODELS_PATH=/root/.ollama/models
+      - OLLAMA_HOST=0.0.0.0
+      - DEFAULT_MODEL=gemma:2b
     networks:
       - borgos-network
     restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:11434/api/tags"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 60s
     deploy:
       resources:
         limits:
           memory: 8G
+    entrypoint: ["/bin/sh", "-c"]
+    command: |
+      "ollama serve &
+      sleep 5
+      ollama pull gemma:2b || true
+      ollama pull llama2:7b || true
+      wait"
 
   agent-zero:
     build:
@@ -213,7 +229,7 @@ services:
     ports:
       - "5678:5678"
     environment:
-      - N8N_HOST=${DOMAIN:-borg.tools.ddns.net}
+      - N8N_HOST=${DOMAIN:-borgtools.ddns.net}
       - N8N_PORT=5678
       - N8N_PROTOCOL=https
       - NODE_ENV=production
