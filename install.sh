@@ -2,6 +2,7 @@
 
 # BorgOS Complete Installation Script v2.0
 # One-line installer: curl -fsSL https://raw.githubusercontent.com/vizi2000/borgos/main/install.sh | bash
+# Force reinstall: curl -fsSL https://raw.githubusercontent.com/vizi2000/borgos/main/install.sh | bash -s -- --force
 # Installs complete AI-first system with all agents and DevOps tools
 
 set -e
@@ -21,6 +22,25 @@ INSTALL_DIR="/opt/borgos"
 VERSION="2.0"
 DOMAIN="borg.tools.ddns.net"
 EMAIL="admin@borg.tools"
+
+# Parse arguments
+FORCE_INSTALL=false
+for arg in "$@"; do
+    case $arg in
+        --force)
+            FORCE_INSTALL=true
+            shift
+            ;;
+        --help)
+            echo "Usage: $0 [OPTIONS]"
+            echo ""
+            echo "Options:"
+            echo "  --force    Force reinstall, overwrite existing installation"
+            echo "  --help     Show this help message"
+            exit 0
+            ;;
+    esac
+done
 
 # Functions
 log() { echo -e "${GREEN}[BorgOS]${NC} $1"; }
@@ -102,30 +122,50 @@ check_dependencies() {
 download_borgos() {
     log "Downloading BorgOS..."
     
-    # Create directory
-    sudo mkdir -p ${INSTALL_DIR}
-    sudo chown $USER:$USER ${INSTALL_DIR}
-    
-    # Clone BorgOS repository
-    if [ -d "${INSTALL_DIR}/.git" ]; then
-        log "Updating existing BorgOS installation..."
-        cd ${INSTALL_DIR}
-        git pull
+    # Create or clean directory
+    if [ -d "${INSTALL_DIR}" ]; then
+        warning "Directory ${INSTALL_DIR} exists. Backing up and cleaning..."
+        # Backup existing .env if exists
+        if [ -f "${INSTALL_DIR}/.env" ]; then
+            cp ${INSTALL_DIR}/.env ${INSTALL_DIR}/.env.backup.$(date +%Y%m%d_%H%M%S)
+            log "Backed up existing .env file"
+        fi
+        # Remove old installation but keep data volumes
+        sudo rm -rf ${INSTALL_DIR}/.git
+        sudo rm -rf ${INSTALL_DIR}/core
+        sudo rm -rf ${INSTALL_DIR}/webui
+        sudo rm -rf ${INSTALL_DIR}/installer
+        sudo rm -rf ${INSTALL_DIR}/database
+        sudo rm -rf ${INSTALL_DIR}/agent-zero
     else
-        log "Cloning BorgOS repository..."
-        git clone ${REPO_URL} ${INSTALL_DIR}
-        cd ${INSTALL_DIR}
+        sudo mkdir -p ${INSTALL_DIR}
     fi
     
-    # Clone Agent Zero
-    log "Downloading Agent Zero..."
-    if [ -d "${INSTALL_DIR}/agent-zero" ]; then
-        log "Updating Agent Zero..."
-        cd ${INSTALL_DIR}/agent-zero
-        git pull
-    else
-        log "Cloning Agent Zero repository..."
-        git clone ${AGENT_ZERO_REPO} ${INSTALL_DIR}/agent-zero
+    sudo chown $USER:$USER ${INSTALL_DIR}
+    
+    # Clone BorgOS repository (force clone)
+    log "Installing BorgOS..."
+    cd /tmp
+    rm -rf borgos-temp
+    git clone ${REPO_URL} borgos-temp
+    cp -r borgos-temp/* ${INSTALL_DIR}/ 2>/dev/null || true
+    cp -r borgos-temp/.[^.]* ${INSTALL_DIR}/ 2>/dev/null || true
+    rm -rf borgos-temp
+    
+    # Clone Agent Zero (force clone)
+    log "Installing Agent Zero..."
+    cd /tmp
+    rm -rf agent-zero-temp
+    git clone ${AGENT_ZERO_REPO} agent-zero-temp
+    mv agent-zero-temp ${INSTALL_DIR}/agent-zero
+    
+    # Restore .env if backup exists
+    if [ -f "${INSTALL_DIR}/.env.backup."* ]; then
+        latest_backup=$(ls -t ${INSTALL_DIR}/.env.backup.* | head -1)
+        if [ ! -f "${INSTALL_DIR}/.env" ]; then
+            cp $latest_backup ${INSTALL_DIR}/.env
+            log "Restored .env from backup"
+        fi
     fi
     
     cd ${INSTALL_DIR}
@@ -162,6 +202,16 @@ deploy_borgos() {
     log "Deploying BorgOS services..."
     
     cd ${INSTALL_DIR}
+    
+    # Stop and remove existing containers if force install
+    if [ "$FORCE_INSTALL" = true ] || [ -f docker-compose.yml ] || [ -f docker-compose-full.yml ]; then
+        log "Stopping existing services..."
+        docker compose down 2>/dev/null || true
+        docker compose -f docker-compose-full.yml down 2>/dev/null || true
+        
+        # Clean up orphaned containers
+        docker container prune -f 2>/dev/null || true
+    fi
     
     # Create .env file with full configuration
     if [ ! -f .env ]; then
