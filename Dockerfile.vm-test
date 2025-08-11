@@ -1,0 +1,39 @@
+# Docker VM Test Environment for BorgOS ISO
+FROM debian:12
+
+# Install QEMU and testing tools
+RUN apt-get update && apt-get install -y \
+    qemu-system-x86 \
+    qemu-utils \
+    qemu-kvm \
+    ovmf \
+    cloud-image-utils \
+    expect \
+    python3 \
+    python3-pip \
+    python3-pexpect \
+    curl \
+    wget \
+    netcat-openbsd \
+    socat \
+    tmux \
+    && rm -rf /var/lib/apt/lists/*
+
+# Install Python testing libraries
+RUN pip3 install --break-system-packages \
+    pytest \
+    pexpect \
+    paramiko \
+    requests
+
+# Create test directories
+RUN mkdir -p /iso /tests /results
+
+# Copy test scripts
+COPY test-iso-vm.py /tests/
+COPY test-suite.sh /tests/
+
+WORKDIR /tests
+
+# Set up entry point for testing
+ENTRYPOINT ["/tests/test-suite.sh"]

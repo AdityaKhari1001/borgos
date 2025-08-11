@@ -41,7 +41,7 @@ BorgOS is an AI-first operating system that integrates multiple AI agents, proje
 
 ```bash
 # Clone the repository
-git clone https://github.com/yourusername/borgos.git
+git clone https://github.com/vizi2000/borgos.git
 cd borgos
 
 # Copy environment template and add your API keys
@@ -59,7 +59,7 @@ open http://localhost:8080
 
 ```bash
 # One-line installation
-curl -fsSL https://raw.githubusercontent.com/yourusername/borgos/main/install.sh | bash
+curl -fsSL https://raw.githubusercontent.com/vizi2000/borgos/main/install.sh | bash
 ```
 
 ### Option 3: Create Bootable USB (Full Linux Distribution)

@@ -1,0 +1,21 @@
+FROM debian:12
+
+# Install all necessary tools
+RUN apt-get update && apt-get install -y \
+    debootstrap \
+    squashfs-tools \
+    xorriso \
+    isolinux \
+    syslinux-common \
+    grub-pc-bin \
+    grub-efi-amd64-bin \
+    mtools \
+    dosfstools \
+    genisoimage \
+    rsync \
+    wget \
+    curl \
+    git \
+    && rm -rf /var/lib/apt/lists/*
+
+WORKDIR /build

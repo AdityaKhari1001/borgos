@@ -1,0 +1,79 @@
+version: '3.8'
+
+services:
+  # ISO Builder Service
+  iso-builder:
+    build:
+      context: .
+      dockerfile: Dockerfile.isobuilder
+    image: borgos-isobuilder:latest
+    container_name: borgos-iso-builder
+    privileged: true
+    volumes:
+      - ./:/build
+      - /var/run/docker.sock:/var/run/docker.sock
+      - iso-output:/build/iso_output
+      - build-cache:/tmp/borgos-iso-offline
+    environment:
+      - BUILD_MODE=offline
+      - ISO_VERSION=4.0.0
+      - DEBIAN_FRONTEND=noninteractive
+    networks:
+      - build-network
+    command: bash /build/build-offline-iso.sh --in-docker
+
+  # VM Test Service
+  vm-tester:
+    build:
+      context: .
+      dockerfile: Dockerfile.vm-test
+    image: borgos-vm-tester:latest
+    container_name: borgos-vm-tester
+    privileged: true
+    depends_on:
+      - iso-builder
+    volumes:
+      - iso-output:/iso:ro
+      - test-results:/results
+      - ./test-iso-vm.py:/tests/test-iso-vm.py:ro
+      - ./test-suite.sh:/tests/test-suite.sh:ro
+    environment:
+      - DISPLAY=:99
+      - TEST_MODE=comprehensive
+    networks:
+      - build-network
+    command: /tests/test-suite.sh /iso/BorgOS-Offline-*.iso
+
+  # Package Mirror Service (for offline packages)
+  package-mirror:
+    image: debian:12
+    container_name: borgos-package-mirror
+    volumes:
+      - package-cache:/var/cache/apt/archives
+      - ./offline-packages:/offline-packages
+    environment:
+      - DEBIAN_FRONTEND=noninteractive
+    networks:
+      - build-network
+    command: |
+      bash -c "
+        apt-get update && 
+        apt-get install -y dpkg-dev &&
+        cd /offline-packages &&
+        dpkg-scanpackages . /dev/null | gzip -9c > Packages.gz &&
+        python3 -m http.server 8080
+      "
+
+volumes:
+  iso-output:
+    driver: local
+  build-cache:
+    driver: local
+  test-results:
+    driver: local
+  package-cache:
+    driver: local
+
+networks:
+  build-network:
+    driver: bridge

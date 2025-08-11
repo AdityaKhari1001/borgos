@@ -1,0 +1,64 @@
+<svg width="200" height="200" viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="brainGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#00ff88;stop-opacity:1" />
+      <stop offset="50%" style="stop-color:#0088ff;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#ff00ff;stop-opacity:1" />
+    </linearGradient>
+    <filter id="glow">
+      <feGaussianBlur stdDeviation="3" result="coloredBlur"/>
+      <feMerge>
+        <feMergeNode in="coloredBlur"/>
+        <feMergeNode in="SourceGraphic"/>
+      </feMerge>
+    </filter>
+    <pattern id="circuit" x="0" y="0" width="40" height="40" patternUnits="userSpaceOnUse">
+      <path d="M 10 10 L 30 10 M 20 10 L 20 30 M 10 30 L 30 30" stroke="#00ff88" stroke-width="0.5" fill="none" opacity="0.3"/>
+      <circle cx="10" cy="10" r="2" fill="#00ff88" opacity="0.5"/>
+      <circle cx="30" cy="10" r="2" fill="#0088ff" opacity="0.5"/>
+      <circle cx="20" cy="30" r="2" fill="#ff00ff" opacity="0.5"/>
+    </pattern>
+  </defs>
+  
+  <!-- Background Circle -->
+  <circle cx="100" cy="100" r="95" fill="#0a0a0a" stroke="url(#brainGradient)" stroke-width="2"/>
+  
+  <!-- Circuit Pattern Background -->
+  <circle cx="100" cy="100" r="93" fill="url(#circuit)" opacity="0.5"/>
+  
+  <!-- Brain Shape -->
+  <g transform="translate(100, 100)">
+    <!-- Left Hemisphere -->
+    <path d="M -40 -20 Q -50 -40, -30 -45 Q -10 -50, 0 -40 Q -20 -35, -25 -20 Q -35 -10, -30 0 Q -40 10, -25 20 Q -20 35, 0 30" 
+          fill="none" stroke="url(#brainGradient)" stroke-width="3" filter="url(#glow)"/>
+    
+    <!-- Right Hemisphere -->
+    <path d="M 40 -20 Q 50 -40, 30 -45 Q 10 -50, 0 -40 Q 20 -35, 25 -20 Q 35 -10, 30 0 Q 40 10, 25 20 Q 20 35, 0 30" 
+          fill="none" stroke="url(#brainGradient)" stroke-width="3" filter="url(#glow)"/>
+    
+    <!-- Connecting Lines -->
+    <path d="M -25 -15 Q 0 -10, 25 -15 M -20 0 Q 0 5, 20 0 M -25 15 Q 0 10, 25 15" 
+          stroke="#00ff88" stroke-width="1.5" opacity="0.7"/>
+    
+    <!-- Neural Nodes -->
+    <circle cx="-30" cy="-20" r="4" fill="#00ff88" filter="url(#glow)"/>
+    <circle cx="30" cy="-20" r="4" fill="#0088ff" filter="url(#glow)"/>
+    <circle cx="0" cy="-35" r="4" fill="#ff00ff" filter="url(#glow)"/>
+    <circle cx="-25" cy="10" r="4" fill="#0088ff" filter="url(#glow)"/>
+    <circle cx="25" cy="10" r="4" fill="#00ff88" filter="url(#glow)"/>
+    <circle cx="0" cy="25" r="4" fill="#ff00ff" filter="url(#glow)"/>
+    
+    <!-- Center Core -->
+    <circle cx="0" cy="0" r="8" fill="none" stroke="url(#brainGradient)" stroke-width="2" filter="url(#glow)"/>
+    <circle cx="0" cy="0" r="3" fill="#ffffff" opacity="0.9"/>
+  </g>
+  
+  <!-- Text -->
+  <text x="100" y="160" font-family="Arial, sans-serif" font-size="24" font-weight="bold" fill="url(#brainGradient)" text-anchor="middle">
+    BorgOS
+  </text>
+  
+  <text x="100" y="180" font-family="Arial, sans-serif" font-size="10" fill="#00ff88" text-anchor="middle">
+    AI-First Operating System
+  </text>
+</svg>

@@ -1,0 +1,183 @@
+version: '3.8'
+
+services:
+  # PostgreSQL Database
+  postgres:
+    image: postgres:15-alpine
+    container_name: borgos-postgres
+    environment:
+      POSTGRES_DB: borgos
+      POSTGRES_USER: borgos
+      POSTGRES_PASSWORD: borgos123
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./database/init.sql:/docker-entrypoint-initdb.d/init.sql
+    ports:
+      - "5432:5432"
+    networks:
+      - borgos-network
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U borgos"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # Redis Cache
+  redis:
+    image: redis:7-alpine
+    container_name: borgos-redis
+    command: redis-server --maxmemory 512mb --maxmemory-policy allkeys-lru
+    ports:
+      - "6379:6379"
+    networks:
+      - borgos-network
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # ChromaDB Vector Database
+  chromadb:
+    image: chromadb/chroma:latest
+    container_name: borgos-chromadb
+    ports:
+      - "8010:8000"
+    environment:
+      CHROMA_SERVER_AUTH_PROVIDER: "chromadb.auth.token_authn.TokenAuthenticationServerProvider"
+      CHROMA_SERVER_AUTH_CREDENTIALS: "borgos-token-123"
+    volumes:
+      - chroma_data:/chroma/chroma
+    networks:
+      - borgos-network
+
+  # Agent Zero Execution Environment
+  agent-zero-exe:
+    image: frdel/agent-zero-exe:latest
+    container_name: agent-zero-exe
+    ports:
+      - "50001:50000"
+    volumes:
+      - agent_zero_work:/workspace
+    environment:
+      - RUN_IN_DOCKER=true
+    networks:
+      - borgos-network
+    privileged: true
+
+  # BorgOS API
+  borgos-api:
+    build:
+      context: .
+      dockerfile: Dockerfile.api
+    container_name: borgos-api
+    environment:
+      DB_HOST: postgres
+      DB_PORT: 5432
+      DB_NAME: borgos
+      DB_USER: borgos
+      DB_PASSWORD: borgos123
+      REDIS_HOST: redis
+      REDIS_PORT: 6379
+      CHROMADB_HOST: chromadb
+      CHROMADB_PORT: 8000
+      CHROMADB_AUTH_TOKEN: borgos-token-123
+      ZENITH_ENABLED: "true"
+      AGENT_ZERO_ENABLED: "true"
+      AGENT_ZERO_AUTOSTART: "true"
+      AGENT_ZERO_EXE_HOST: agent-zero-exe
+      AGENT_ZERO_EXE_PORT: 50000
+      MCP_ENABLED: "true"
+      # AI Model Configuration
+      OPENAI_API_KEY: ${OPENAI_API_KEY:-}
+      ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY:-}
+      OLLAMA_API_BASE_URL: ${OLLAMA_API_BASE_URL:-http://ollama:11434}
+    volumes:
+      - ./core:/app
+      - ./data:/data
+      - /var/run/docker.sock:/var/run/docker.sock
+      - ${HOME}/ai/agent-zero:/agent-zero
+      - ${HOME}/ai/zenith-coder:/zenith-coder
+    ports:
+      - "8081:8081"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      chromadb:
+        condition: service_started
+      agent-zero-exe:
+        condition: service_started
+    networks:
+      - borgos-network
+    command: python main.py
+
+  # BorgOS Dashboard
+  borgos-dashboard:
+    build:
+      context: .
+      dockerfile: Dockerfile.dashboard
+    container_name: borgos-dashboard
+    environment:
+      API_URL: http://borgos-api:8081
+      AGENT_ZERO_URL: http://agent-zero-ui:8085
+    ports:
+      - "8080:80"
+    depends_on:
+      - borgos-api
+    networks:
+      - borgos-network
+
+  # Agent Zero UI (Optional - for direct access)
+  agent-zero-ui:
+    build:
+      context: ${HOME}/ai/agent-zero
+      dockerfile: docker/run/Dockerfile
+    container_name: agent-zero-ui
+    environment:
+      OPENAI_API_KEY: ${OPENAI_API_KEY:-}
+      ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY:-}
+      DOCKER_CONTAINER_NAME: agent-zero-exe
+      DOCKER_CONTAINER_ALREADY_RUNNING: "true"
+    volumes:
+      - ${HOME}/ai/agent-zero:/app
+      - agent_zero_memory:/app/memory
+      - agent_zero_logs:/app/logs
+    ports:
+      - "8085:8085"
+    networks:
+      - borgos-network
+    command: python run_ui.py --host 0.0.0.0 --port 8085
+    depends_on:
+      - agent-zero-exe
+
+  # Ollama (Optional - for local models)
+  ollama:
+    image: ollama/ollama:latest
+    container_name: borgos-ollama
+    ports:
+      - "11434:11434"
+    volumes:
+      - ollama_data:/root/.ollama
+    networks:
+      - borgos-network
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: all
+              capabilities: [gpu]
+
+networks:
+  borgos-network:
+    driver: bridge
+
+volumes:
+  postgres_data:
+  chroma_data:
+  ollama_data:
+  agent_zero_work:
+  agent_zero_memory:
+  agent_zero_logs:

@@ -1,0 +1,24 @@
+FROM --platform=linux/amd64 debian:12
+
+RUN apt-get update && \
+    apt-get install -y --no-install-recommends \
+        debootstrap \
+        squashfs-tools \
+        xorriso \
+        isolinux \
+        syslinux-common \
+        genisoimage \
+        rsync \
+        wget \
+        curl \
+        ca-certificates \
+        dosfstools \
+        mtools \
+    && rm -rf /var/lib/apt/lists/*
+
+WORKDIR /build
+
+COPY build-iso-internal.sh /build/
+RUN chmod +x /build/build-iso-internal.sh
+
+CMD ["/build/build-iso-internal.sh"]

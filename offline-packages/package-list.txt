@@ -1,0 +1,31 @@
+# Core system
+linux-image-amd64
+grub-pc
+grub-efi-amd64
+systemd
+systemd-sysv
+init
+sudo
+openssh-server
+network-manager
+
+# Development
+build-essential
+git
+curl
+wget
+vim
+nano
+python3
+python3-pip
+python3-venv
+
+# Docker
+docker.io
+docker-compose
+containerd
+
+# Desktop (optional)
+xfce4
+lightdm
+firefox-esr

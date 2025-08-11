@@ -1,0 +1,4 @@
+[autorun]
+open=install\install.bat
+icon=borgos.ico
+label=BorgOS Installer

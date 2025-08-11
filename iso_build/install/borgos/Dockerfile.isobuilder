@@ -1,0 +1,16 @@
+FROM debian:12
+
+RUN apt-get update && apt-get install -y \
+    debootstrap \
+    squashfs-tools \
+    xorriso \
+    isolinux \
+    syslinux-common \
+    genisoimage \
+    rsync \
+    wget \
+    git \
+    curl \
+    && rm -rf /var/lib/apt/lists/*
+
+WORKDIR /build

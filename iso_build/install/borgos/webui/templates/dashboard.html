@@ -1,0 +1,502 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>BorgOS Dashboard - Professional DevOps Interface</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.0/font/bootstrap-icons.css" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link href="/static/css/dashboard.css" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdn.socket.io/4.5.4/socket.io.min.js"></script>
+</head>
+<body>
+    <!-- Top Navigation Bar -->
+    <nav class="navbar navbar-dark bg-dark border-bottom border-secondary">
+        <div class="container-fluid">
+            <a class="navbar-brand d-flex align-items-center" href="#">
+                <i class="bi bi-cpu-fill text-primary me-2" style="font-size: 1.5rem;"></i>
+                <span class="fw-bold">BorgOS</span>
+                <span class="badge bg-success ms-2">ONLINE</span>
+            </a>
+            <div class="d-flex align-items-center">
+                <span class="text-light me-3">
+                    <i class="bi bi-person-circle me-1"></i>
+                    {{ session.username }}
+                </span>
+                <button class="btn btn-outline-light btn-sm" onclick="location.href='/logout'">
+                    <i class="bi bi-box-arrow-right"></i> Logout
+                </button>
+            </div>
+        </div>
+    </nav>
+
+    <div class="d-flex">
+        <!-- Sidebar -->
+        <nav class="sidebar bg-dark">
+            <ul class="nav flex-column">
+                <li class="nav-item">
+                    <a class="nav-link active" href="#" data-section="overview">
+                        <i class="bi bi-speedometer2"></i>
+                        <span>Overview</span>
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link" href="#" data-section="metrics">
+                        <i class="bi bi-graph-up"></i>
+                        <span>Metrics</span>
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link" href="#" data-section="ai-models">
+                        <i class="bi bi-robot"></i>
+                        <span>AI Models</span>
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link" href="#" data-section="services">
+                        <i class="bi bi-hdd-stack"></i>
+                        <span>Services</span>
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link" href="#" data-section="containers">
+                        <i class="bi bi-box"></i>
+                        <span>Containers</span>
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link" href="#" data-section="transfer">
+                        <i class="bi bi-arrow-left-right"></i>
+                        <span>Transfer</span>
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link" href="#" data-section="sessions">
+                        <i class="bi bi-people"></i>
+                        <span>Sessions</span>
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link" href="#" data-section="config">
+                        <i class="bi bi-gear"></i>
+                        <span>Configuration</span>
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link" href="#" data-section="logs">
+                        <i class="bi bi-file-text"></i>
+                        <span>Logs</span>
+                    </a>
+                </li>
+            </ul>
+        </nav>
+
+        <!-- Main Content -->
+        <main class="main-content">
+            <!-- Overview Section -->
+            <div id="overview-section" class="content-section active">
+                <h2 class="mb-4">System Overview</h2>
+                
+                <!-- Quick Stats Cards -->
+                <div class="row mb-4">
+                    <div class="col-md-3">
+                        <div class="card bg-gradient-primary text-white">
+                            <div class="card-body">
+                                <div class="d-flex justify-content-between align-items-center">
+                                    <div>
+                                        <h6 class="card-subtitle mb-2">CPU Usage</h6>
+                                        <h3 class="card-title" id="cpu-usage">0%</h3>
+                                    </div>
+                                    <i class="bi bi-cpu display-4 opacity-50"></i>
+                                </div>
+                                <div class="progress mt-2" style="height: 4px;">
+                                    <div class="progress-bar bg-white" id="cpu-progress" style="width: 0%"></div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <div class="card bg-gradient-success text-white">
+                            <div class="card-body">
+                                <div class="d-flex justify-content-between align-items-center">
+                                    <div>
+                                        <h6 class="card-subtitle mb-2">Memory</h6>
+                                        <h3 class="card-title" id="memory-usage">0%</h3>
+                                    </div>
+                                    <i class="bi bi-memory display-4 opacity-50"></i>
+                                </div>
+                                <div class="progress mt-2" style="height: 4px;">
+                                    <div class="progress-bar bg-white" id="memory-progress" style="width: 0%"></div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <div class="card bg-gradient-warning text-white">
+                            <div class="card-body">
+                                <div class="d-flex justify-content-between align-items-center">
+                                    <div>
+                                        <h6 class="card-subtitle mb-2">Disk Usage</h6>
+                                        <h3 class="card-title" id="disk-usage">0%</h3>
+                                    </div>
+                                    <i class="bi bi-hdd display-4 opacity-50"></i>
+                                </div>
+                                <div class="progress mt-2" style="height: 4px;">
+                                    <div class="progress-bar bg-white" id="disk-progress" style="width: 0%"></div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <div class="card bg-gradient-info text-white">
+                            <div class="card-body">
+                                <div class="d-flex justify-content-between align-items-center">
+                                    <div>
+                                        <h6 class="card-subtitle mb-2">Uptime</h6>
+                                        <h3 class="card-title" id="uptime">0d 0h</h3>
+                                    </div>
+                                    <i class="bi bi-clock-history display-4 opacity-50"></i>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- System Info -->
+                <div class="row">
+                    <div class="col-md-6">
+                        <div class="card">
+                            <div class="card-header">
+                                <h5 class="mb-0">System Information</h5>
+                            </div>
+                            <div class="card-body">
+                                <table class="table table-sm">
+                                    <tbody>
+                                        <tr>
+                                            <td class="text-muted">Hostname</td>
+                                            <td id="hostname">-</td>
+                                        </tr>
+                                        <tr>
+                                            <td class="text-muted">Platform</td>
+                                            <td id="platform">-</td>
+                                        </tr>
+                                        <tr>
+                                            <td class="text-muted">Kernel</td>
+                                            <td id="kernel">-</td>
+                                        </tr>
+                                        <tr>
+                                            <td class="text-muted">CPU Cores</td>
+                                            <td id="cpu-cores">-</td>
+                                        </tr>
+                                        <tr>
+                                            <td class="text-muted">Total Memory</td>
+                                            <td id="total-memory">-</td>
+                                        </tr>
+                                        <tr>
+                                            <td class="text-muted">Total Disk</td>
+                                            <td id="total-disk">-</td>
+                                        </tr>
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="card">
+                            <div class="card-header">
+                                <h5 class="mb-0">Quick Actions</h5>
+                            </div>
+                            <div class="card-body">
+                                <div class="d-grid gap-2">
+                                    <button class="btn btn-primary" onclick="restartServices()">
+                                        <i class="bi bi-arrow-clockwise"></i> Restart All Services
+                                    </button>
+                                    <button class="btn btn-success" onclick="updateModels()">
+                                        <i class="bi bi-cloud-download"></i> Update AI Models
+                                    </button>
+                                    <button class="btn btn-warning" onclick="clearCache()">
+                                        <i class="bi bi-trash"></i> Clear Cache
+                                    </button>
+                                    <button class="btn btn-info" onclick="runDiagnostics()">
+                                        <i class="bi bi-heart-pulse"></i> Run Diagnostics
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Metrics Section -->
+            <div id="metrics-section" class="content-section">
+                <h2 class="mb-4">Real-time Metrics</h2>
+                <div class="row">
+                    <div class="col-md-6 mb-4">
+                        <div class="card">
+                            <div class="card-header">CPU Usage History</div>
+                            <div class="card-body">
+                                <canvas id="cpu-chart"></canvas>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-6 mb-4">
+                        <div class="card">
+                            <div class="card-header">Memory Usage History</div>
+                            <div class="card-body">
+                                <canvas id="memory-chart"></canvas>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-6 mb-4">
+                        <div class="card">
+                            <div class="card-header">Network I/O</div>
+                            <div class="card-body">
+                                <canvas id="network-chart"></canvas>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-6 mb-4">
+                        <div class="card">
+                            <div class="card-header">Disk I/O</div>
+                            <div class="card-body">
+                                <canvas id="disk-io-chart"></canvas>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- AI Models Section -->
+            <div id="ai-models-section" class="content-section">
+                <h2 class="mb-4">AI Models Management</h2>
+                <div class="card">
+                    <div class="card-body">
+                        <div class="table-responsive">
+                            <table class="table table-hover">
+                                <thead>
+                                    <tr>
+                                        <th>Model Name</th>
+                                        <th>Provider</th>
+                                        <th>Size</th>
+                                        <th>Status</th>
+                                        <th>Last Used</th>
+                                        <th>Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="models-table">
+                                    <!-- Populated by JavaScript -->
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Services Section -->
+            <div id="services-section" class="content-section">
+                <h2 class="mb-4">Services Management</h2>
+                <div class="row" id="services-grid">
+                    <!-- Populated by JavaScript -->
+                </div>
+            </div>
+
+            <!-- Containers Section -->
+            <div id="containers-section" class="content-section">
+                <h2 class="mb-4">Docker Containers</h2>
+                <div class="card">
+                    <div class="card-body">
+                        <div class="table-responsive">
+                            <table class="table table-hover">
+                                <thead>
+                                    <tr>
+                                        <th>Container ID</th>
+                                        <th>Image</th>
+                                        <th>Status</th>
+                                        <th>Ports</th>
+                                        <th>Created</th>
+                                        <th>Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="containers-table">
+                                    <!-- Populated by JavaScript -->
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Transfer Section -->
+            <div id="transfer-section" class="content-section">
+                <h2 class="mb-4">Network Transfer</h2>
+                <div class="row mb-4">
+                    <div class="col-md-6">
+                        <div class="card">
+                            <div class="card-body">
+                                <h5 class="card-title">Upload</h5>
+                                <div class="d-flex justify-content-between align-items-center mb-2">
+                                    <span>Current Speed:</span>
+                                    <span class="badge bg-primary" id="upload-speed">0 KB/s</span>
+                                </div>
+                                <div class="d-flex justify-content-between align-items-center">
+                                    <span>Total Uploaded:</span>
+                                    <span id="total-uploaded">0 MB</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="card">
+                            <div class="card-body">
+                                <h5 class="card-title">Download</h5>
+                                <div class="d-flex justify-content-between align-items-center mb-2">
+                                    <span>Current Speed:</span>
+                                    <span class="badge bg-success" id="download-speed">0 KB/s</span>
+                                </div>
+                                <div class="d-flex justify-content-between align-items-center">
+                                    <span>Total Downloaded:</span>
+                                    <span id="total-downloaded">0 MB</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="card">
+                    <div class="card-header">Transfer History</div>
+                    <div class="card-body">
+                        <canvas id="transfer-chart"></canvas>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Sessions Section -->
+            <div id="sessions-section" class="content-section">
+                <h2 class="mb-4">Active Sessions</h2>
+                <div class="card">
+                    <div class="card-body">
+                        <div class="table-responsive">
+                            <table class="table table-hover">
+                                <thead>
+                                    <tr>
+                                        <th>Session ID</th>
+                                        <th>User</th>
+                                        <th>IP Address</th>
+                                        <th>Connected At</th>
+                                        <th>Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="sessions-table">
+                                    <!-- Populated by JavaScript -->
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Configuration Section -->
+            <div id="config-section" class="content-section">
+                <h2 class="mb-4">System Configuration</h2>
+                
+                <!-- API Keys -->
+                <div class="card mb-4">
+                    <div class="card-header">
+                        <h5 class="mb-0">API Keys</h5>
+                    </div>
+                    <div class="card-body">
+                        <form id="api-keys-form">
+                            <div class="mb-3">
+                                <label class="form-label">OpenRouter API Key</label>
+                                <div class="input-group">
+                                    <input type="password" class="form-control" id="openrouter-key" placeholder="sk-or-v1-...">
+                                    <button class="btn btn-outline-secondary" type="button" onclick="toggleVisibility('openrouter-key')">
+                                        <i class="bi bi-eye"></i>
+                                    </button>
+                                </div>
+                            </div>
+                            <div class="mb-3">
+                                <label class="form-label">HuggingFace API Key</label>
+                                <div class="input-group">
+                                    <input type="password" class="form-control" id="huggingface-key" placeholder="hf_...">
+                                    <button class="btn btn-outline-secondary" type="button" onclick="toggleVisibility('huggingface-key')">
+                                        <i class="bi bi-eye"></i>
+                                    </button>
+                                </div>
+                            </div>
+                            <div class="mb-3">
+                                <label class="form-label">OpenAI API Key</label>
+                                <div class="input-group">
+                                    <input type="password" class="form-control" id="openai-key" placeholder="sk-...">
+                                    <button class="btn btn-outline-secondary" type="button" onclick="toggleVisibility('openai-key')">
+                                        <i class="bi bi-eye"></i>
+                                    </button>
+                                </div>
+                            </div>
+                            <button type="submit" class="btn btn-primary">Save API Keys</button>
+                        </form>
+                    </div>
+                </div>
+
+                <!-- System Settings -->
+                <div class="card">
+                    <div class="card-header">
+                        <h5 class="mb-0">System Settings</h5>
+                    </div>
+                    <div class="card-body">
+                        <form id="system-settings-form">
+                            <div class="mb-3">
+                                <label class="form-label">Default AI Model</label>
+                                <select class="form-select" id="default-model">
+                                    <option>mistral:7b</option>
+                                    <option>llama2:7b</option>
+                                    <option>codellama:7b</option>
+                                </select>
+                            </div>
+                            <div class="mb-3">
+                                <label class="form-label">Max Memory for AI Models (GB)</label>
+                                <input type="number" class="form-control" id="max-memory" value="4" min="1" max="32">
+                            </div>
+                            <div class="mb-3">
+                                <label class="form-label">Enable Offline Mode</label>
+                                <div class="form-check form-switch">
+                                    <input class="form-check-input" type="checkbox" id="offline-mode" checked>
+                                    <label class="form-check-label" for="offline-mode">
+                                        Use local models only
+                                    </label>
+                                </div>
+                            </div>
+                            <button type="submit" class="btn btn-primary">Save Settings</button>
+                        </form>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Logs Section -->
+            <div id="logs-section" class="content-section">
+                <h2 class="mb-4">System Logs</h2>
+                <div class="card">
+                    <div class="card-header">
+                        <div class="d-flex justify-content-between align-items-center">
+                            <h5 class="mb-0">Log Viewer</h5>
+                            <select class="form-select w-auto" id="log-service">
+                                <option value="system">System</option>
+                                <option value="ollama">Ollama</option>
+                                <option value="nginx">Nginx</option>
+                                <option value="docker">Docker</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="card-body">
+                        <pre class="log-viewer" id="log-content">Loading logs...</pre>
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="/static/js/dashboard.js"></script>
+</body>
+</html>

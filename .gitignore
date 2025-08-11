@@ -171,3 +171,16 @@ tmp/
 *.iso
 iso_output/
 
+# Debian packages
+*.deb
+
+# Build directories
+hybrid_build*/
+hybrid_docker_build/
+iso_mount/
+build-logs-*/
+test-results/
+
+# ISO files
+BorgOS-*.iso
+debian-x86-mini.iso
