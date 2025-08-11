@@ -200,6 +200,14 @@ download_borgos() {
     cp -r ${TEMP_DIR}/borgos/* ${INSTALL_DIR}/ 2>/dev/null || true
     cp -r ${TEMP_DIR}/borgos/.[^.]* ${INSTALL_DIR}/ 2>/dev/null || true
     
+    # Copy simple docker-compose if zenith directories don't exist
+    if [ ! -d "${INSTALL_DIR}/zenith-coder/frontend" ] || [ ! -d "${INSTALL_DIR}/zenith-coder/backend" ]; then
+        log "Using simplified docker-compose without zenith..."
+        if [ -f "${TEMP_DIR}/borgos/docker-compose-simple.yml" ]; then
+            cp ${TEMP_DIR}/borgos/docker-compose-simple.yml ${INSTALL_DIR}/docker-compose.yml
+        fi
+    fi
+    
     # Install Agent Zero
     if [ -d "${TEMP_DIR}/agent-zero" ]; then
         rm -rf ${INSTALL_DIR}/agent-zero
@@ -462,13 +470,19 @@ ENV
         log "Created .env file with secure passwords"
     fi
     
-    # Use the full compose file if it exists
-    if [ -f docker-compose-full.yml ]; then
-        log "Starting all BorgOS services..."
+    # Use appropriate compose file
+    if [ -f docker-compose-simple.yml ] && [ ! -d zenith-coder/frontend ]; then
+        log "Starting BorgOS services (simplified mode)..."
+        docker compose -f docker-compose-simple.yml up -d
+    elif [ -f docker-compose-full.yml ] && [ -d zenith-coder/frontend ]; then
+        log "Starting all BorgOS services (full mode)..."
         docker compose -f docker-compose-full.yml up -d
-    else
-        log "Starting basic BorgOS services..."
+    elif [ -f docker-compose.yml ]; then
+        log "Starting BorgOS services..."
         docker compose up -d || docker-compose up -d
+    else
+        error "No docker-compose file found!"
+        return 1
     fi
     
     # Wait for services
