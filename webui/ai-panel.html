@@ -1,0 +1,630 @@
+<!DOCTYPE html>
+<html lang="pl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>BorgOS AI Panel - Control Center</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+        }
+        
+        .header {
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(10px);
+            padding: 1rem 2rem;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.2);
+        }
+        
+        .header h1 {
+            color: white;
+            font-size: 1.5rem;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+        
+        .container {
+            flex: 1;
+            display: flex;
+            max-width: 1400px;
+            margin: 0 auto;
+            width: 100%;
+            padding: 2rem;
+            gap: 2rem;
+        }
+        
+        .sidebar {
+            width: 300px;
+            background: rgba(255, 255, 255, 0.95);
+            border-radius: 1rem;
+            padding: 1.5rem;
+            height: fit-content;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+        }
+        
+        .main-content {
+            flex: 1;
+            background: rgba(255, 255, 255, 0.95);
+            border-radius: 1rem;
+            padding: 1.5rem;
+            display: flex;
+            flex-direction: column;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+        }
+        
+        .status-card {
+            background: white;
+            border-radius: 0.5rem;
+            padding: 1rem;
+            margin-bottom: 1rem;
+            border: 1px solid #e5e7eb;
+        }
+        
+        .status-card h3 {
+            font-size: 0.875rem;
+            color: #6b7280;
+            margin-bottom: 0.5rem;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+        }
+        
+        .status-indicator {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            margin: 0.5rem 0;
+        }
+        
+        .status-dot {
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+            background: #ef4444;
+        }
+        
+        .status-dot.active {
+            background: #10b981;
+            animation: pulse 2s infinite;
+        }
+        
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.5; }
+        }
+        
+        .model-selector {
+            margin-bottom: 1rem;
+        }
+        
+        .model-selector label {
+            display: block;
+            font-size: 0.875rem;
+            font-weight: 600;
+            color: #374151;
+            margin-bottom: 0.5rem;
+        }
+        
+        .model-selector select {
+            width: 100%;
+            padding: 0.5rem;
+            border: 1px solid #d1d5db;
+            border-radius: 0.375rem;
+            background: white;
+            font-size: 0.875rem;
+        }
+        
+        .chat-area {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            gap: 1rem;
+        }
+        
+        .messages {
+            flex: 1;
+            overflow-y: auto;
+            padding: 1rem;
+            background: #f9fafb;
+            border-radius: 0.5rem;
+            min-height: 400px;
+        }
+        
+        .message {
+            margin-bottom: 1rem;
+            padding: 0.75rem;
+            border-radius: 0.5rem;
+            animation: fadeIn 0.3s;
+        }
+        
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        
+        .message.user {
+            background: #667eea;
+            color: white;
+            margin-left: 20%;
+            text-align: right;
+        }
+        
+        .message.ai {
+            background: white;
+            border: 1px solid #e5e7eb;
+            margin-right: 20%;
+        }
+        
+        .message.error {
+            background: #fee2e2;
+            color: #991b1b;
+            border: 1px solid #fca5a5;
+        }
+        
+        .input-area {
+            display: flex;
+            gap: 1rem;
+        }
+        
+        .input-area textarea {
+            flex: 1;
+            padding: 0.75rem;
+            border: 1px solid #d1d5db;
+            border-radius: 0.5rem;
+            resize: vertical;
+            min-height: 80px;
+            font-family: inherit;
+            font-size: 0.875rem;
+        }
+        
+        .input-area button {
+            padding: 0.75rem 2rem;
+            background: #667eea;
+            color: white;
+            border: none;
+            border-radius: 0.5rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: background 0.2s;
+        }
+        
+        .input-area button:hover {
+            background: #5a67d8;
+        }
+        
+        .input-area button:disabled {
+            background: #9ca3af;
+            cursor: not-allowed;
+        }
+        
+        .loading {
+            display: inline-block;
+            width: 20px;
+            height: 20px;
+            border: 3px solid rgba(255, 255, 255, 0.3);
+            border-radius: 50%;
+            border-top-color: white;
+            animation: spin 1s ease-in-out infinite;
+        }
+        
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+        
+        .quick-actions {
+            margin-top: 1rem;
+            padding-top: 1rem;
+            border-top: 1px solid #e5e7eb;
+        }
+        
+        .quick-actions h3 {
+            font-size: 0.875rem;
+            color: #6b7280;
+            margin-bottom: 0.75rem;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+        }
+        
+        .action-button {
+            display: block;
+            width: 100%;
+            padding: 0.5rem;
+            margin-bottom: 0.5rem;
+            background: white;
+            border: 1px solid #d1d5db;
+            border-radius: 0.375rem;
+            font-size: 0.875rem;
+            cursor: pointer;
+            transition: all 0.2s;
+            text-align: left;
+        }
+        
+        .action-button:hover {
+            background: #f3f4f6;
+            border-color: #667eea;
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>🧠 BorgOS AI Control Panel</h1>
+    </div>
+    
+    <div class="container">
+        <div class="sidebar">
+            <div class="status-card">
+                <h3>Status Systemów</h3>
+                <div class="status-indicator">
+                    <span class="status-dot" id="ollama-status"></span>
+                    <span>Ollama</span>
+                </div>
+                <div class="status-indicator">
+                    <span class="status-dot" id="openrouter-status"></span>
+                    <span>OpenRouter</span>
+                </div>
+                <div class="status-indicator">
+                    <span class="status-dot" id="api-status"></span>
+                    <span>BorgOS API</span>
+                </div>
+            </div>
+            
+            <div class="model-selector">
+                <label for="model">Model AI:</label>
+                <select id="model">
+                    <optgroup label="Ollama (Lokalne)">
+                        <option value="ollama:gemma:2b" selected>Gemma 2B</option>
+                        <option value="ollama:llama2:7b">Llama 2 7B</option>
+                        <option value="ollama:codellama:7b">Code Llama 7B</option>
+                        <option value="ollama:mistral:7b">Mistral 7B</option>
+                    </optgroup>
+                    <optgroup label="OpenRouter (Darmowe)">
+                        <option value="openrouter:google/gemma-2b-it:free">Gemma 2B (Free)</option>
+                        <option value="openrouter:meta-llama/llama-3.2-3b-instruct:free">Llama 3.2 3B (Free)</option>
+                        <option value="openrouter:mistralai/mistral-7b-instruct:free">Mistral 7B (Free)</option>
+                        <option value="openrouter:huggingfaceh4/zephyr-7b-beta:free">Zephyr 7B (Free)</option>
+                    </optgroup>
+                </select>
+            </div>
+            
+            <div class="quick-actions">
+                <h3>Szybkie Akcje</h3>
+                <button class="action-button" onclick="testConnection()">🔌 Test Połączenia</button>
+                <button class="action-button" onclick="pullModel()">⬇️ Pobierz Model</button>
+                <button class="action-button" onclick="fixOllama()">🔧 Napraw Ollama</button>
+                <button class="action-button" onclick="showCommands()">📋 Pokaż Komendy</button>
+                <button class="action-button" onclick="clearChat()">🗑️ Wyczyść Chat</button>
+            </div>
+        </div>
+        
+        <div class="main-content">
+            <div class="chat-area">
+                <div class="messages" id="messages">
+                    <div class="message ai">
+                        Cześć! Jestem BorgOS AI. Wybierz model z listy i zadaj mi pytanie.
+                    </div>
+                </div>
+                
+                <div class="input-area">
+                    <textarea id="input" placeholder="Wpisz swoją wiadomość..." onkeydown="handleKeyDown(event)"></textarea>
+                    <button id="send-btn" onclick="sendMessage()">Wyślij</button>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <script>
+        // Configuration
+        const OLLAMA_HOST = 'http://localhost:11434';
+        const API_HOST = 'http://localhost:8081';
+        const NODE_HOST = 'http://localhost:3000';
+        
+        // Check system status
+        async function checkStatus() {
+            // Check Ollama
+            try {
+                const response = await fetch(`${OLLAMA_HOST}/api/tags`);
+                if (response.ok) {
+                    document.getElementById('ollama-status').classList.add('active');
+                }
+            } catch (e) {
+                document.getElementById('ollama-status').classList.remove('active');
+            }
+            
+            // Check API
+            try {
+                const response = await fetch(`${API_HOST}/health`);
+                if (response.ok) {
+                    document.getElementById('api-status').classList.add('active');
+                }
+            } catch (e) {
+                document.getElementById('api-status').classList.remove('active');
+            }
+            
+            // Check OpenRouter (based on key presence)
+            const key = localStorage.getItem('openrouter_key');
+            if (key) {
+                document.getElementById('openrouter-status').classList.add('active');
+            }
+        }
+        
+        // Send message
+        async function sendMessage() {
+            const input = document.getElementById('input');
+            const messages = document.getElementById('messages');
+            const sendBtn = document.getElementById('send-btn');
+            const model = document.getElementById('model').value;
+            
+            if (!input.value.trim()) return;
+            
+            // Add user message
+            const userMsg = document.createElement('div');
+            userMsg.className = 'message user';
+            userMsg.textContent = input.value;
+            messages.appendChild(userMsg);
+            
+            const prompt = input.value;
+            input.value = '';
+            sendBtn.disabled = true;
+            sendBtn.innerHTML = '<span class="loading"></span>';
+            
+            // Add AI thinking message
+            const aiMsg = document.createElement('div');
+            aiMsg.className = 'message ai';
+            aiMsg.innerHTML = '<span class="loading"></span> Myślę...';
+            messages.appendChild(aiMsg);
+            messages.scrollTop = messages.scrollHeight;
+            
+            try {
+                let response;
+                const [provider, ...modelParts] = model.split(':');
+                const modelName = modelParts.join(':');
+                
+                if (provider === 'ollama') {
+                    // Try Ollama
+                    response = await fetch(`${OLLAMA_HOST}/api/generate`, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({
+                            model: modelName,
+                            prompt: prompt,
+                            stream: false
+                        })
+                    });
+                    
+                    if (response.ok) {
+                        const data = await response.json();
+                        aiMsg.textContent = data.response || 'Brak odpowiedzi';
+                    } else {
+                        throw new Error('Ollama nie odpowiada');
+                    }
+                } else if (provider === 'openrouter') {
+                    // Try Node.js server first
+                    try {
+                        response = await fetch(`${NODE_HOST}/api/chat`, {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({
+                                prompt: prompt,
+                                model: modelName
+                            })
+                        });
+                        
+                        if (response.ok) {
+                            const data = await response.json();
+                            aiMsg.textContent = data.response;
+                        } else {
+                            throw new Error('Node server nie działa');
+                        }
+                    } catch (nodeError) {
+                        // Direct OpenRouter call
+                        const apiKey = prompt('Podaj klucz API OpenRouter:');
+                        if (apiKey) {
+                            localStorage.setItem('openrouter_key', apiKey);
+                            response = await fetch('https://openrouter.ai/api/v1/chat/completions', {
+                                method: 'POST',
+                                headers: {
+                                    'Authorization': `Bearer ${apiKey}`,
+                                    'Content-Type': 'application/json',
+                                    'HTTP-Referer': window.location.origin,
+                                    'X-Title': 'BorgOS'
+                                },
+                                body: JSON.stringify({
+                                    model: modelName,
+                                    messages: [{ role: 'user', content: prompt }]
+                                })
+                            });
+                            
+                            if (response.ok) {
+                                const data = await response.json();
+                                aiMsg.textContent = data.choices[0].message.content;
+                            } else {
+                                throw new Error('OpenRouter błąd');
+                            }
+                        }
+                    }
+                }
+            } catch (error) {
+                aiMsg.className = 'message error';
+                aiMsg.textContent = '❌ Błąd: ' + error.message;
+            }
+            
+            sendBtn.disabled = false;
+            sendBtn.textContent = 'Wyślij';
+            messages.scrollTop = messages.scrollHeight;
+        }
+        
+        // Handle Enter key
+        function handleKeyDown(event) {
+            if (event.key === 'Enter' && !event.shiftKey) {
+                event.preventDefault();
+                sendMessage();
+            }
+        }
+        
+        // Test connection
+        async function testConnection() {
+            const messages = document.getElementById('messages');
+            const testMsg = document.createElement('div');
+            testMsg.className = 'message ai';
+            
+            let status = '📊 Status połączeń:\n\n';
+            
+            // Test Ollama
+            try {
+                const response = await fetch(`${OLLAMA_HOST}/api/tags`);
+                if (response.ok) {
+                    const data = await response.json();
+                    status += `✅ Ollama: Działa (${data.models?.length || 0} modeli)\n`;
+                } else {
+                    status += '❌ Ollama: Nie działa\n';
+                }
+            } catch (e) {
+                status += '❌ Ollama: Niedostępne\n';
+            }
+            
+            // Test API
+            try {
+                const response = await fetch(`${API_HOST}/health`);
+                status += response.ok ? '✅ BorgOS API: Działa\n' : '❌ BorgOS API: Nie działa\n';
+            } catch (e) {
+                status += '❌ BorgOS API: Niedostępne\n';
+            }
+            
+            // Test Node
+            try {
+                const response = await fetch(`${NODE_HOST}/health`);
+                status += response.ok ? '✅ Node.js: Działa\n' : '❌ Node.js: Nie działa\n';
+            } catch (e) {
+                status += '❌ Node.js: Niedostępne\n';
+            }
+            
+            status += localStorage.getItem('openrouter_key') ? '✅ OpenRouter: Skonfigurowany' : '⚠️ OpenRouter: Brak klucza';
+            
+            testMsg.style.whiteSpace = 'pre-line';
+            testMsg.textContent = status;
+            messages.appendChild(testMsg);
+            messages.scrollTop = messages.scrollHeight;
+        }
+        
+        // Pull model
+        async function pullModel() {
+            const model = document.getElementById('model').value;
+            const messages = document.getElementById('messages');
+            
+            if (!model.startsWith('ollama:')) {
+                const msg = document.createElement('div');
+                msg.className = 'message error';
+                msg.textContent = '⚠️ Można pobierać tylko modele Ollama';
+                messages.appendChild(msg);
+                return;
+            }
+            
+            const modelName = model.split(':').slice(1).join(':');
+            const msg = document.createElement('div');
+            msg.className = 'message ai';
+            msg.textContent = `⬇️ Pobieram model ${modelName}... To może potrwać kilka minut.`;
+            messages.appendChild(msg);
+            
+            try {
+                const response = await fetch(`${OLLAMA_HOST}/api/pull`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ name: modelName })
+                });
+                
+                if (response.ok) {
+                    msg.textContent = `✅ Model ${modelName} pobrany pomyślnie!`;
+                } else {
+                    throw new Error('Nie udało się pobrać modelu');
+                }
+            } catch (error) {
+                msg.className = 'message error';
+                msg.textContent = '❌ ' + error.message;
+            }
+            
+            messages.scrollTop = messages.scrollHeight;
+        }
+        
+        // Fix Ollama
+        function fixOllama() {
+            const messages = document.getElementById('messages');
+            const msg = document.createElement('div');
+            msg.className = 'message ai';
+            msg.style.whiteSpace = 'pre-line';
+            msg.textContent = `🔧 Naprawianie Ollama:
+
+1. Sprawdź status:
+   sudo systemctl status ollama
+
+2. Restart usługi:
+   sudo systemctl restart ollama
+
+3. Jeśli nie działa, użyj skryptu:
+   curl -fsSL https://raw.githubusercontent.com/vizi2000/borgos/main/scripts/fix-ollama.sh | bash
+
+4. Ręczne uruchomienie:
+   ollama serve
+
+5. Pobierz model:
+   ollama pull gemma:2b`;
+            
+            messages.appendChild(msg);
+            messages.scrollTop = messages.scrollHeight;
+        }
+        
+        // Show commands
+        function showCommands() {
+            const messages = document.getElementById('messages');
+            const msg = document.createElement('div');
+            msg.className = 'message ai';
+            msg.style.whiteSpace = 'pre-line';
+            msg.textContent = `📋 Przydatne komendy:
+
+🤖 AI:
+ai "pytanie"                    # Używa Ollama/OpenRouter
+ollama run gemma:2b             # Bezpośrednio Ollama
+python3 /opt/borgos/scripts/openrouter.py "pytanie"
+
+🔧 Zarządzanie:
+borgos status                   # Status wszystkich serwisów
+borgos restart                  # Restart serwisów
+borgos logs                     # Pokaż logi
+
+🐳 Docker:
+docker ps                       # Lista kontenerów
+docker logs borgos-ollama       # Logi Ollama
+docker restart borgos-ollama    # Restart Ollama
+
+📊 Debugowanie:
+curl ${OLLAMA_HOST}/api/tags    # Test Ollama API
+systemctl status ollama         # Status systemd
+journalctl -u ollama -n 50      # Logi systemd`;
+            
+            messages.appendChild(msg);
+            messages.scrollTop = messages.scrollHeight;
+        }
+        
+        // Clear chat
+        function clearChat() {
+            const messages = document.getElementById('messages');
+            messages.innerHTML = '<div class="message ai">Chat wyczyszczony. Możesz zacząć nową rozmowę.</div>';
+        }
+        
+        // Initialize
+        window.onload = () => {
+            checkStatus();
+            setInterval(checkStatus, 5000);
+        };
+    </script>
+</body>
+</html>

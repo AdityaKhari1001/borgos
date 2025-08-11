@@ -235,15 +235,74 @@ install_ollama() {
     log "Installing Ollama..."
     
     if ! command -v ollama &> /dev/null; then
+        log "Downloading and installing Ollama..."
         curl -fsSL https://ollama.ai/install.sh | sh
+        
+        # Wait for installation to complete
+        sleep 3
     else
-        log "Ollama already installed"
+        log "Ollama already installed: $(ollama --version 2>/dev/null || echo 'version unknown')"
     fi
     
-    # Start Ollama service
+    # Configure and start Ollama service on Linux
     if [[ "$OS" == "linux" ]]; then
-        sudo systemctl enable ollama
-        sudo systemctl start ollama
+        log "Configuring Ollama systemd service..."
+        
+        # Create systemd service file if it doesn't exist
+        if [ ! -f /etc/systemd/system/ollama.service ]; then
+            log "Creating Ollama systemd service file..."
+            sudo tee /etc/systemd/system/ollama.service > /dev/null << 'SERVICE'
+[Unit]
+Description=Ollama Service
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=ollama
+Group=ollama
+ExecStart=/usr/local/bin/ollama serve
+Restart=always
+RestartSec=10
+Environment="HOME=/usr/share/ollama"
+Environment="OLLAMA_HOST=0.0.0.0"
+WorkingDirectory=/usr/share/ollama
+
+[Install]
+WantedBy=multi-user.target
+SERVICE
+        fi
+        
+        # Create ollama user if doesn't exist
+        if ! id -u ollama > /dev/null 2>&1; then
+            log "Creating ollama user..."
+            sudo useradd -r -s /bin/false -m -d /usr/share/ollama ollama
+        fi
+        
+        # Create necessary directories
+        sudo mkdir -p /usr/share/ollama
+        sudo chown -R ollama:ollama /usr/share/ollama
+        
+        # Reload systemd and enable service
+        log "Enabling and starting Ollama service..."
+        sudo systemctl daemon-reload
+        sudo systemctl enable ollama.service
+        sudo systemctl restart ollama.service
+        
+        # Check service status
+        sleep 2
+        if sudo systemctl is-active --quiet ollama.service; then
+            log "Ollama service is running"
+        else
+            warning "Ollama service failed to start, trying alternative method..."
+            # Try to start directly
+            sudo -u ollama /usr/local/bin/ollama serve > /dev/null 2>&1 &
+            sleep 3
+        fi
+    elif [[ "$OS" == "macos" ]]; then
+        # On macOS, create a launchd service
+        log "Starting Ollama on macOS..."
+        ollama serve > /dev/null 2>&1 &
     fi
 }
 
@@ -251,50 +310,109 @@ install_ollama() {
 ensure_ollama_running() {
     log "Ensuring Ollama is running with default model..."
     
-    # Wait for Ollama to be ready
+    # First check if systemd service is running (Linux only)
+    if [[ "$OS" == "linux" ]]; then
+        if ! sudo systemctl is-active --quiet ollama.service; then
+            log "Ollama service not active, starting it..."
+            sudo systemctl start ollama.service
+            sleep 3
+            
+            # Check again
+            if ! sudo systemctl is-active --quiet ollama.service; then
+                warning "Systemd service failed, trying direct launch..."
+                # Try running as current user with proper permissions
+                OLLAMA_HOST=0.0.0.0 ollama serve > /var/log/ollama.log 2>&1 &
+                echo $! > /tmp/ollama.pid
+                sleep 5
+            fi
+        fi
+    fi
+    
+    # Wait for Ollama API to be ready
     local max_attempts=30
     local attempt=0
     
+    log "Waiting for Ollama API to be ready..."
     while [ $attempt -lt $max_attempts ]; do
         if curl -s http://localhost:11434/api/tags > /dev/null 2>&1; then
-            log "Ollama is running"
+            log "Ollama API is responding"
             break
         fi
         
-        # Try to start Ollama if not running
-        if [ $attempt -eq 5 ]; then
-            log "Attempting to start Ollama service..."
-            if command -v systemctl > /dev/null; then
-                sudo systemctl restart ollama 2>/dev/null || true
+        # On attempt 10, try one more restart
+        if [ $attempt -eq 10 ]; then
+            warning "Ollama not responding, attempting restart..."
+            if [[ "$OS" == "linux" ]]; then
+                sudo systemctl restart ollama.service 2>/dev/null || {
+                    pkill ollama 2>/dev/null || true
+                    sleep 2
+                    OLLAMA_HOST=0.0.0.0 ollama serve > /var/log/ollama.log 2>&1 &
+                }
             else
+                pkill ollama 2>/dev/null || true
+                sleep 2
                 ollama serve > /dev/null 2>&1 &
             fi
         fi
         
         sleep 2
         attempt=$((attempt + 1))
+        echo -n "."
     done
+    echo ""
     
     if [ $attempt -eq $max_attempts ]; then
-        warning "Ollama may not be running properly, will use Docker container"
-        return
+        warning "Ollama not responding via systemd, trying fix script..."
+        # Try to fix Ollama installation
+        if [ -f "${INSTALL_DIR}/scripts/fix-ollama.sh" ]; then
+            bash "${INSTALL_DIR}/scripts/fix-ollama.sh"
+        else
+            error "Ollama failed to start properly."
+            warning "You can try manually:"
+            warning "  sudo systemctl status ollama"
+            warning "  ollama serve"
+            warning "Or download fix script:"
+            warning "  curl -fsSL https://raw.githubusercontent.com/vizi2000/borgos/main/scripts/fix-ollama.sh | bash"
+        fi
+        return 1
     fi
     
-    # Pull default model (gemma:2b) immediately
+    # Pull default model (gemma:2b) - using sudo if needed
     log "Pulling default AI model (gemma:2b)..."
-    ollama pull gemma:2b || warning "Failed to pull gemma:2b"
+    if [[ "$OS" == "linux" ]]; then
+        # Try with ollama user first
+        sudo -u ollama ollama pull gemma:2b 2>/dev/null || \
+        # If fails, try as current user
+        ollama pull gemma:2b || \
+        warning "Failed to pull gemma:2b - you may need to run: ollama pull gemma:2b"
+    else
+        ollama pull gemma:2b || warning "Failed to pull gemma:2b"
+    fi
     
-    # Try to pull additional useful models
-    log "Pulling additional AI models for better performance..."
-    ollama pull llama2:7b || true
-    ollama pull codellama:7b || true
-    ollama pull mistral:7b || true
+    # Try to pull additional useful models (optional)
+    log "Pulling additional AI models (optional)..."
+    ollama pull llama2:7b 2>/dev/null || true
+    ollama pull codellama:7b 2>/dev/null || true
     
-    # Set default model in environment
-    echo "# Default Ollama model" >> ${INSTALL_DIR}/.env
-    echo "DEFAULT_OLLAMA_MODEL=gemma:2b" >> ${INSTALL_DIR}/.env
+    # Set default model in environment if .env exists
+    if [ -f "${INSTALL_DIR}/.env" ]; then
+        if ! grep -q "DEFAULT_OLLAMA_MODEL" "${INSTALL_DIR}/.env"; then
+            echo "" >> ${INSTALL_DIR}/.env
+            echo "# Default Ollama model" >> ${INSTALL_DIR}/.env
+            echo "DEFAULT_OLLAMA_MODEL=gemma:2b" >> ${INSTALL_DIR}/.env
+        fi
+    fi
     
-    log "Ollama setup complete with default model"
+    # Verify Ollama is working by listing models
+    log "Verifying Ollama installation..."
+    if ollama list > /dev/null 2>&1; then
+        log "Ollama is working correctly!"
+        ollama list
+    else
+        warning "Ollama installed but may need manual configuration"
+    fi
+    
+    log "Ollama setup complete"
 }
 
 # Deploy BorgOS
